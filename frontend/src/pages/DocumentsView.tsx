@@ -196,7 +196,7 @@ export default function DocumentsView() {
             key={stat.key}
             type="button"
             style={{ minWidth: '100px', minHeight: '36px', padding: '12px 30px' }}
-            className={`rounded-lg flex items-center justify-center gap-2 transition-colors duration-150 ${
+            className={`rounded-lg flex items-center justify-center gap-2 ${
               activeFilter === stat.key
                 ? 'bg-[#1a2332] border border-[#2a3548]'
                 : 'hover:bg-[#1a2332]/50'
@@ -230,7 +230,7 @@ export default function DocumentsView() {
               return (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 transition-colors group"
+                  className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 group"
                   style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0' }}
                 >
                     {/* File Icon */}
