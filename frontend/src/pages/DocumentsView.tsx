@@ -15,7 +15,6 @@ import {
   FolderOpen,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
-import { mockDocuments } from '../data/mock'
 import type { KGDocument } from '../types'
 
 const statusConfig = {
@@ -61,7 +60,7 @@ const fileTypeConfig: Record<string, { icon: string; color: string; bg: string }
 }
 
 export default function DocumentsView() {
-  const [documents, setDocuments] = useState<KGDocument[]>(mockDocuments)
+  const [documents, setDocuments] = useState<KGDocument[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<KGDocument | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)

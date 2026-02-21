@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
-import { mockNodes, mockEdges } from '../data/mock'
-import type { KGNode } from '../types'
+import type { KGNode, KGEdge } from '../types'
 
 interface NodePosition {
   id: string
@@ -31,6 +30,8 @@ const typeLabels: Record<KGNode['type'], string> = {
 
 export default function GraphView() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [nodes, setNodes] = useState<KGNode[]>([])
+  const [edges, setEdges] = useState<KGEdge[]>([])
   const [positions, setPositions] = useState<NodePosition[]>([])
   const [selectedNode, setSelectedNode] = useState<KGNode | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
@@ -46,8 +47,8 @@ export default function GraphView() {
       if (width === 0 || height === 0) return
       setDimensions({ width, height })
 
-      const initialPositions = mockNodes.map((node, i) => {
-        const angle = (i / mockNodes.length) * Math.PI * 2
+      const initialPositions = nodes.map((node, i) => {
+        const angle = (i / nodes.length) * Math.PI * 2
         const radius = Math.min(width, height) * 0.28
         return {
           id: node.id,
@@ -66,7 +67,7 @@ export default function GraphView() {
       clearTimeout(timer)
       window.removeEventListener('resize', updateDimensions)
     }
-  }, [])
+  }, [nodes])
 
   // Force simulation
   useEffect(() => {
@@ -93,7 +94,7 @@ export default function GraphView() {
         }
 
         // Attraction along edges
-        mockEdges.forEach((edge) => {
+        edges.forEach((edge) => {
           const source = next.find((n) => n.id === edge.source)
           const target = next.find((n) => n.id === edge.target)
           if (source && target) {
@@ -147,7 +148,7 @@ export default function GraphView() {
 
   const getConnectedNodes = (nodeId: string) => {
     const connected = new Set<string>()
-    mockEdges.forEach((edge) => {
+    edges.forEach((edge) => {
       if (edge.source === nodeId) connected.add(edge.target)
       if (edge.target === nodeId) connected.add(edge.source)
     })
@@ -163,7 +164,7 @@ export default function GraphView() {
         <div>
           <h1 className="text-xl font-semibold text-[#f0f4f8]">知识图谱</h1>
           <p className="text-[#64748b] text-sm mt-0.5">
-            {mockNodes.length} 个实体 · {mockEdges.length} 个关系
+            {nodes.length} 个实体 · {edges.length} 个关系
           </p>
         </div>
         {/* Legend */}
@@ -264,7 +265,7 @@ export default function GraphView() {
 
               {/* Edges */}
               <g>
-                {mockEdges.map((edge) => {
+                {edges.map((edge) => {
                   const source = getPosition(edge.source)
                   const target = getPosition(edge.target)
                   const isHighlighted =
@@ -304,7 +305,7 @@ export default function GraphView() {
 
               {/* Nodes */}
               <g>
-                {mockNodes.map((node) => {
+                {nodes.map((node) => {
                   const pos = getPosition(node.id)
                   const colors = nodeColors[node.type]
                   const isHovered = hoveredNode === node.id
@@ -397,7 +398,7 @@ export default function GraphView() {
                     关联实体
                   </h3>
                   <div className="space-y-2 max-h-[240px] overflow-y-auto">
-                    {mockEdges
+                    {edges
                       .filter(
                         (e) =>
                           e.source === selectedNode.id || e.target === selectedNode.id
@@ -406,7 +407,7 @@ export default function GraphView() {
                       .map((edge) => {
                         const relatedId =
                           edge.source === selectedNode.id ? edge.target : edge.source
-                        const relatedNode = mockNodes.find((n) => n.id === relatedId)
+                        const relatedNode = nodes.find((n) => n.id === relatedId)
                         if (!relatedNode) return null
                         return (
                           <motion.div

@@ -15,8 +15,7 @@ import {
   FileText,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
-import { mockPipelineRun, mockLogs } from '../data/mock'
-import type { LogEntry } from '../types'
+import type { PipelineRun, LogEntry } from '../types'
 
 const stageStatusConfig = {
   pending: {
@@ -57,18 +56,19 @@ const logLevelConfig = {
 }
 
 export default function PipelineView() {
-  const [pipeline, setPipeline] = useState(mockPipelineRun)
-  const [logs] = useState<LogEntry[]>(mockLogs)
-  const [expandedStage, setExpandedStage] = useState<string | null>('s4')
+  const [pipeline, setPipeline] = useState<PipelineRun | null>(null)
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [expandedStage, setExpandedStage] = useState<string | null>(null)
   const [isPaused, setIsPaused] = useState(false)
   const [showAllLogs, setShowAllLogs] = useState(false)
 
   // Simulate progress
   useEffect(() => {
-    if (isPaused || pipeline.status !== 'running') return
+    if (!pipeline || isPaused || pipeline.status !== 'running') return
 
     const interval = setInterval(() => {
       setPipeline((prev) => {
+        if (!prev) return null
         const stages = prev.stages.map((stage) => {
           if (stage.status === 'running' && stage.progress < 100) {
             const newProgress = Math.min(100, stage.progress + Math.random() * 3)
@@ -88,9 +88,9 @@ export default function PipelineView() {
     }, 500)
 
     return () => clearInterval(interval)
-  }, [isPaused, pipeline.status])
+  }, [isPaused, pipeline?.status])
 
-  const completedStages = pipeline.stages.filter((s) => s.status === 'completed').length
+  const completedStages = pipeline?.stages.filter((s) => s.status === 'completed').length ?? 0
 
   return (
     <div className="h-full flex flex-col gap-6">
@@ -122,45 +122,55 @@ export default function PipelineView() {
       </div>
 
       {/* Current Task Card */}
-      <NeoCard className="p-5" variant="elevated">
-        <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#00b4d8]/10 flex items-center justify-center shrink-0 border border-[#00b4d8]/30">
-              <FileText className="w-6 h-6 text-[#00b4d8]" />
+      {pipeline ? (
+        <NeoCard className="p-5" variant="elevated">
+          <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[#00b4d8]/10 flex items-center justify-center shrink-0 border border-[#00b4d8]/30">
+                <FileText className="w-6 h-6 text-[#00b4d8]" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-[#f0f4f8]">{pipeline.documentName}</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <Clock className="w-4 h-4 text-[#64748b]" />
+                  <span className="text-sm text-[#64748b]">开始于 {pipeline.startTime}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="font-semibold text-[#f0f4f8]">{pipeline.documentName}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <Clock className="w-4 h-4 text-[#64748b]" />
-                <span className="text-sm text-[#64748b]">开始于 {pipeline.startTime}</span>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-[#00b4d8]">{pipeline.overallProgress}%</div>
+              <div className="text-sm text-[#64748b]">
+                {completedStages}/{pipeline.stages.length} 阶段完成
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-[#00b4d8]">{pipeline.overallProgress}%</div>
-            <div className="text-sm text-[#64748b]">
-              {completedStages}/{pipeline.stages.length} 阶段完成
-            </div>
-          </div>
-        </div>
 
-        {/* Overall Progress Bar */}
-        <div className="h-2 neo-progress">
-          <motion.div
-            className="neo-progress-bar"
-            initial={{ width: 0 }}
-            animate={{ width: `${pipeline.overallProgress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-      </NeoCard>
+          {/* Overall Progress Bar */}
+          <div className="h-2 neo-progress">
+            <motion.div
+              className="neo-progress-bar"
+              initial={{ width: 0 }}
+              animate={{ width: `${pipeline.overallProgress}%` }}
+              transition={{ duration: 0.3 }}
+            />
+          </div>
+        </NeoCard>
+      ) : (
+        <NeoCard className="p-8 flex flex-col items-center justify-center text-center" variant="elevated">
+          <div className="w-14 h-14 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
+            <FileText className="w-6 h-6 text-[#64748b]" />
+          </div>
+          <p className="text-[#94a3b8]">暂无运行中的流程</p>
+          <p className="text-sm text-[#64748b] mt-1">上传文档后，处理流程将在此处显示</p>
+        </NeoCard>
+      )}
 
       {/* Two Column Layout */}
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
         {/* Pipeline Stages */}
         <div className="space-y-3 overflow-y-auto">
           <h3 className="text-sm font-medium text-[#64748b] mb-2">处理阶段</h3>
-          {pipeline.stages.map((stage, index) => {
+          {pipeline?.stages.map((stage, index) => {
             const config = stageStatusConfig[stage.status]
             const StatusIcon = config.icon
             const isExpanded = expandedStage === stage.id
@@ -291,19 +301,22 @@ export default function PipelineView() {
                 <Terminal className="w-5 h-5 text-[#00b4d8]" />
                 <h3 className="font-medium text-[#f0f4f8]">活动日志</h3>
               </div>
-              <motion.button
-                className="text-sm text-[#00b4d8] flex items-center gap-1"
-                whileHover={{ scale: 1.02 }}
-                onClick={() => setShowAllLogs(!showAllLogs)}
-              >
-                {showAllLogs ? '收起' : '查看全部'}
-                {showAllLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </motion.button>
+              {logs.length > 6 && (
+                <motion.button
+                  className="text-sm text-[#00b4d8] flex items-center gap-1"
+                  whileHover={{ scale: 1.02 }}
+                  onClick={() => setShowAllLogs(!showAllLogs)}
+                >
+                  {showAllLogs ? '收起' : '查看全部'}
+                  {showAllLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </motion.button>
+              )}
             </div>
 
             <div className="space-y-2 flex-1 overflow-y-auto">
-              <AnimatePresence>
-                {(showAllLogs ? logs : logs.slice(0, 6)).map((log, index) => {
+              {logs.length > 0 ? (
+                <AnimatePresence>
+                  {(showAllLogs ? logs : logs.slice(0, 6)).map((log, index) => {
                   const levelConfig = logLevelConfig[log.level]
                   return (
                     <motion.div
@@ -324,8 +337,13 @@ export default function PipelineView() {
                       <p className="text-sm text-[#94a3b8] flex-1 min-w-0">{log.message}</p>
                     </motion.div>
                   )
-                })}
-              </AnimatePresence>
+                  })}
+                </AnimatePresence>
+              ) : (
+                <div className="flex items-center justify-center h-full py-8">
+                  <p className="text-sm text-[#64748b]">暂无日志</p>
+                </div>
+              )}
             </div>
           </NeoCard>
         </div>

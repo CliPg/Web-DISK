@@ -12,7 +12,6 @@ import {
   Sparkles,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
-import { mockSearchResults } from '../data/mock'
 import type { SearchResult } from '../types'
 
 const typeFilters = [
@@ -53,13 +52,9 @@ export default function SearchView() {
     setIsSearching(true)
     setShowRecent(false)
 
+    // TODO: 实现真实的搜索 API 调用
     setTimeout(() => {
-      const filtered = mockSearchResults.filter(
-        (r) =>
-          r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          r.description.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      setResults(filtered.length > 0 ? filtered : mockSearchResults)
+      setResults([])
       setIsSearching(false)
     }, 400)
   }
