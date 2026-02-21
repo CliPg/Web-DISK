@@ -190,12 +190,12 @@ export default function DocumentsView() {
       </NeoCard>
 
       {/* Stats & Filter Tabs */}
-      <div className="flex items-center gap-2 p-1.5 neo-card">
+      <div className="flex items-center gap-2 neo-card" style={{ padding: '12px' }}>
         {stats.map((stat) => (
           <motion.button
             key={stat.key}
-            style={{ minWidth: '100px', minHeight: '48px' }}
-            className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
+            style={{ minWidth: '100px', minHeight: '36px', padding: '12px 30px' }}
+            className={`rounded-lg flex items-center justify-center gap-2 transition-all ${
               activeFilter === stat.key
                 ? 'bg-[#1a2332] border border-[#2a3548]'
                 : 'hover:bg-[#1a2332]/50'
