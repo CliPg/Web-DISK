@@ -21,7 +21,7 @@ export default function Sidebar() {
   const navigate = useNavigate()
 
   return (
-    <aside className="glass-sidebar h-screen w-[72px] flex flex-col items-center py-6 gap-2 fixed left-0 top-0 z-50">
+    <aside className="glass-sidebar h-screen w-[72px] flex flex-col items-center py-6 gap-2 sticky top-0 left-0 z-50">
       {/* Logo */}
       <motion.div
         className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#007AFF] to-[#5AC8FA] flex items-center justify-center mb-6 cursor-pointer shadow-lg shadow-[#007AFF]/20"
