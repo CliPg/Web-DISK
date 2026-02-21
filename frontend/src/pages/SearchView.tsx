@@ -115,12 +115,12 @@ export default function SearchView() {
             )}
           </div>
           <motion.button
-            className="px-4 py-2.5 bg-[#007AFF] text-white rounded-xl font-medium flex items-center gap-2 shrink-0"
+            className="px-6 py-3 bg-[#007AFF] text-white rounded-xl font-medium text-[15px] flex items-center gap-2.5 shrink-0"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleSearch(query)}
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-5 h-5" />
             搜索
           </motion.button>
         </div>
@@ -138,11 +138,11 @@ export default function SearchView() {
               <Clock className="w-4 h-4 text-gray-400" />
               <span className="text-sm text-gray-500">最近搜索</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-3">
               {recentSearches.map((term) => (
                 <motion.button
                   key={term}
-                  className="px-4 py-2 glass rounded-full text-sm text-gray-600 hover:text-gray-800 shadow-glass"
+                  className="px-5 py-2.5 glass rounded-full text-[15px] text-gray-600 hover:text-gray-800 shadow-glass"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => {
@@ -165,13 +165,13 @@ export default function SearchView() {
           animate={{ opacity: 1 }}
           className="flex items-center justify-between gap-4 flex-wrap"
         >
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <div className="flex gap-1">
+          <div className="flex items-center gap-3">
+            <Filter className="w-5 h-5 text-gray-400" />
+            <div className="flex gap-2">
               {typeFilters.map((filter) => (
                 <motion.button
                   key={filter.value}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-[15px] font-medium transition-colors ${
                     activeFilter === filter.value
                       ? 'bg-[#007AFF] text-white'
                       : 'text-gray-500 hover:bg-black/5'
