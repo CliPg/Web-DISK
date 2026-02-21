@@ -35,15 +35,15 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-6 space-y-5">
-        {navItems.map((item) => {
+      <nav className="flex-1 pl-2 pr-4 py-6 space-y-5">
+        {navItems.map((item, index) => {
           const isActive = location.pathname === item.path
           return (
             <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
-              style={{ marginBottom: '4px', paddingLeft: '14px' }}
-              className={`w-full flex items-center gap-5 pr-3 py-5 min-h-[44px] rounded-xl text-left transition-all duration-200 group relative ${
+              style={{ marginBottom: '4px', marginTop: index === 0 ? '8px' : '0', width: 'calc(100% - 4px)', paddingLeft: '18px' }}
+              className={`flex items-center gap-5 px-3 py-5 min-h-[44px] rounded-xl text-left transition-all duration-200 group relative ${
                 isActive
                   ? 'bg-[#00b4d8]/10 text-[#00b4d8]'
                   : 'text-[#94a3b8] hover:text-[#f0f4f8] hover:bg-[#1a2332]'
