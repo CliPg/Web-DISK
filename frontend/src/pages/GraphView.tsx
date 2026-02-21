@@ -396,7 +396,7 @@ export default function GraphView() {
                     <Link2 className="w-4 h-4 text-[#00b4d8]" />
                     关联实体
                   </h3>
-                  <div className="space-y-2 max-h-[280px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[240px] overflow-y-auto">
                     {mockEdges
                       .filter(
                         (e) =>

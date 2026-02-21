@@ -22,7 +22,7 @@ export default function Sidebar() {
   const navigate = useNavigate()
 
   return (
-    <aside className="neo-sidebar h-screen w-[260px] flex flex-col sticky top-0 left-0 z-50">
+    <aside className="neo-sidebar h-screen w-[240px] flex flex-col sticky top-0 left-0 z-50">
       {/* Logo Header */}
       <div className="px-6 py-8 border-b border-[#2a3548]">
         <div className="flex items-center gap-4">
@@ -36,14 +36,14 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-5 py-6 space-y-3">
+      <nav className="flex-1 px-2 py-6 space-y-4">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path
           return (
             <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl text-left transition-all duration-200 group ${
+              className={`w-full flex items-center gap-5 px-3 py-5 min-h-[44px] rounded-xl text-left transition-all duration-200 group ${
                 isActive
                   ? 'bg-[#00b4d8]/10 text-[#00b4d8] border border-[#00b4d8]/30'
                   : 'text-[#94a3b8] hover:text-[#f0f4f8] hover:bg-[#1a2332]'
@@ -55,8 +55,7 @@ export default function Sidebar() {
                 strokeWidth={isActive ? 2 : 1.5}
               />
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm">{item.label}</div>
-                <div className="text-xs text-[#64748b] truncate">{item.description}</div>
+                <div className="font-medium text-base">{item.label}</div>
               </div>
               {isActive && (
                 <ChevronRight className="w-4 h-4 text-[#00b4d8] shrink-0" />
@@ -67,7 +66,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Stats Section */}
-      <div className="px-5 py-6 border-t border-[#2a3548]">
+      <div className="px-2 py-6 border-t border-[#2a3548]">
         <div className="neo-card p-5 space-y-5">
           <div className="flex items-center justify-between">
             <span className="text-xs text-[#64748b]">图谱状态</span>
@@ -87,13 +86,13 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom Settings */}
-      <div className="px-5 py-5 border-t border-[#2a3548]">
+      <div className="px-2 py-5 border-t border-[#2a3548]">
         <motion.button
-          className="w-full flex items-center gap-4 px-4 py-4 rounded-xl text-[#94a3b8] hover:text-[#f0f4f8] hover:bg-[#1a2332] transition-colors duration-200"
+          className="w-full flex items-center gap-5 px-3 py-4 rounded-xl text-[#94a3b8] hover:text-[#f0f4f8] hover:bg-[#1a2332] transition-colors duration-200"
           whileTap={{ scale: 0.98 }}
         >
           <Settings className="w-5 h-5" strokeWidth={1.5} />
-          <span className="text-sm font-medium">设置</span>
+          <span className="text-base font-medium">设置</span>
         </motion.button>
       </div>
     </aside>
