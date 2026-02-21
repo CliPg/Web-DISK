@@ -24,7 +24,7 @@ export default function Sidebar() {
   return (
     <aside className="neo-sidebar h-screen w-[240px] flex flex-col sticky top-0 left-0 z-50">
       {/* Logo Header */}
-      <div className="px-6 py-8 border-b border-[#2a3548]">
+      <div className="px-6 py-10 min-h-[48px] border-b border-[#2a3548] flex items-center">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#00b4d8] to-[#0096c7] flex items-center justify-center shadow-lg">
             <Database className="w-5 h-5 text-white" />
