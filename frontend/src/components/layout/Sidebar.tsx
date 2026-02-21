@@ -7,7 +7,6 @@ import {
   Activity,
   Settings,
   Database,
-  ChevronRight,
 } from 'lucide-react'
 
 const navItems = [
@@ -43,23 +42,23 @@ export default function Sidebar() {
             <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
-              style={{ marginBottom: '4px' }}
-              className={`w-full flex items-center gap-5 px-3 py-5 min-h-[44px] rounded-xl text-left transition-all duration-200 group ${
+              style={{ marginBottom: '4px', paddingLeft: '14px' }}
+              className={`w-full flex items-center gap-5 pr-3 py-5 min-h-[44px] rounded-xl text-left transition-all duration-200 group relative ${
                 isActive
-                  ? 'bg-[#00b4d8]/10 text-[#00b4d8] border border-[#00b4d8]/30'
+                  ? 'bg-[#00b4d8]/10 text-[#00b4d8]'
                   : 'text-[#94a3b8] hover:text-[#f0f4f8] hover:bg-[#1a2332]'
               }`}
               whileTap={{ scale: 0.98 }}
             >
               <item.icon
                 className={`w-5 h-5 shrink-0 ${isActive ? 'text-[#00b4d8]' : ''}`}
-                strokeWidth={isActive ? 2 : 1.5}
+                strokeWidth={isActive ? 2.5 : 1.5}
               />
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-base">{item.label}</div>
               </div>
               {isActive && (
-                <ChevronRight className="w-4 h-4 text-[#00b4d8] shrink-0" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[#00b4d8] rounded-r-full" />
               )}
             </motion.button>
           )
