@@ -11,10 +11,10 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { icon: Share2, label: '图谱可视化', path: '/', description: '浏览知识图谱' },
-  { icon: FileText, label: '文档管理', path: '/documents', description: '管理知识文档' },
-  { icon: Search, label: '知识搜索', path: '/search', description: '搜索实体关系' },
-  { icon: Activity, label: '流程监控', path: '/pipeline', description: '查看处理进度' },
+  { icon: Share2, label: 'Visualize', path: '/'},
+  { icon: FileText, label: 'Document', path: '/documents'},
+  { icon: Search, label: 'Search', path: '/search'},
+  { icon: Activity, label: 'Monitor', path: '/pipeline'},
 ]
 
 export default function Sidebar() {
@@ -31,7 +31,6 @@ export default function Sidebar() {
           </div>
           <div>
             <h1 className="text-lg font-semibold text-[#f0f4f8]">DISK</h1>
-            <p className="text-xs text-[#64748b]">知识图谱工作台</p>
           </div>
         </div>
       </div>
