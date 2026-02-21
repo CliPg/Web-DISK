@@ -192,15 +192,15 @@ export default function DocumentsView() {
       {/* Stats & Filter Tabs */}
       <div className="flex items-center gap-2 neo-card" style={{ padding: '12px' }}>
         {stats.map((stat) => (
-          <motion.button
+          <button
             key={stat.key}
+            type="button"
             style={{ minWidth: '100px', minHeight: '36px', padding: '12px 30px' }}
-            className={`rounded-lg flex items-center justify-center gap-2 transition-all ${
+            className={`rounded-lg flex items-center justify-center gap-2 transition-colors duration-150 ${
               activeFilter === stat.key
                 ? 'bg-[#1a2332] border border-[#2a3548]'
                 : 'hover:bg-[#1a2332]/50'
             }`}
-            whileTap={{ scale: 0.98 }}
             onClick={() => setActiveFilter(stat.key)}
           >
             <span className={`text-sm ${activeFilter === stat.key ? 'text-[#f0f4f8] font-medium' : 'text-[#94a3b8]'}`}>
@@ -214,30 +214,25 @@ export default function DocumentsView() {
             >
               {stat.value}
             </span>
-          </motion.button>
+          </button>
         ))}
       </div>
 
       {/* Document List */}
-      {filteredDocuments.length > 0 ? (
-        <NeoCard className="flex-1 overflow-hidden" variant="elevated">
+      <NeoCard className="flex-1 overflow-hidden" variant="elevated">
+        {filteredDocuments.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
-            <AnimatePresence mode="popLayout">
-              {filteredDocuments.map((doc, index) => {
-                const status = statusConfig[doc.status]
-                const StatusIcon = status.icon
-                const fileConfig = fileTypeConfig[doc.fileType] || fileTypeConfig.txt
+            {filteredDocuments.map((doc, index) => {
+              const status = statusConfig[doc.status]
+              const StatusIcon = status.icon
+              const fileConfig = fileTypeConfig[doc.fileType] || fileTypeConfig.txt
 
-                return (
-                  <motion.div
-                    key={doc.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ delay: index * 0.02 }}
-                    className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 transition-colors group"
-                    style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0' }}
-                  >
+              return (
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 transition-colors group"
+                  style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0' }}
+                >
                     {/* File Icon */}
                     <div className={`w-11 h-11 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
                       {fileConfig.icon}
@@ -261,10 +256,9 @@ export default function DocumentsView() {
                       {doc.status === 'processing' ? (
                         <div className="flex items-center gap-2 w-28">
                           <div className="flex-1 h-1.5 neo-progress overflow-hidden">
-                            <motion.div
-                              className="neo-progress-bar"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${doc.progress}%` }}
+                            <div
+                              className="neo-progress-bar transition-all duration-300"
+                              style={{ width: `${doc.progress}%` }}
                             />
                           </div>
                           <span className="text-xs text-[#00b4d8] font-medium w-9 text-right">{doc.progress}%</span>
@@ -343,26 +337,21 @@ export default function DocumentsView() {
                         </AnimatePresence>
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 )
               })}
-            </AnimatePresence>
+            </div>
+        ) : (
+          /* Empty State */
+          <div className="h-full flex flex-col items-center justify-center py-16">
+            <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
+              <FolderOpen className="w-8 h-8 text-[#64748b]" />
+            </div>
+            <p className="text-[#94a3b8] mb-1">暂无文档</p>
+            <p className="text-sm text-[#64748b]">上传您的第一个文档开始构建知识图谱</p>
           </div>
-        </NeoCard>
-      ) : (
-        /* Empty State */
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="flex-1 flex flex-col items-center justify-center"
-        >
-          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
-            <FolderOpen className="w-8 h-8 text-[#64748b]" />
-          </div>
-          <p className="text-[#94a3b8] mb-1">暂无文档</p>
-          <p className="text-sm text-[#64748b]">上传您的第一个文档开始构建知识图谱</p>
-        </motion.div>
-      )}
+        )}
+      </NeoCard>
 
       {/* Detail Modal */}
       <AnimatePresence>
