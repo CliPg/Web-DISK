@@ -194,7 +194,7 @@ export default function DocumentsView() {
         {stats.map((stat) => (
           <motion.button
             key={stat.key}
-            style={{ minWidth: '100px' }}
+            style={{ minWidth: '100px', minHeight: '48px' }}
             className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
               activeFilter === stat.key
                 ? 'bg-[#1a2332] border border-[#2a3548]'
