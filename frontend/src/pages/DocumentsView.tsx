@@ -141,20 +141,11 @@ export default function DocumentsView() {
   return (
     <div className="h-full flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start">
         <div>
           <h1 className="text-xl font-semibold text-[#f0f4f8]">文档管理</h1>
           <p className="text-[#64748b] text-sm mt-0.5">上传和管理您的知识文档</p>
         </div>
-        <motion.button
-          className="px-5 py-2.5 neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="w-4 h-4" />
-          上传文档
-        </motion.button>
         <input
           type="file"
           ref={fileInputRef}
@@ -199,11 +190,12 @@ export default function DocumentsView() {
       </NeoCard>
 
       {/* Stats & Filter Tabs */}
-      <div className="flex items-center gap-2 p-1.5 neo-card w-fit">
+      <div className="flex items-center gap-2 p-1.5 neo-card">
         {stats.map((stat) => (
           <motion.button
             key={stat.key}
-            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
+            style={{ minWidth: '100px' }}
+            className={`px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-all ${
               activeFilter === stat.key
                 ? 'bg-[#1a2332] border border-[#2a3548]'
                 : 'hover:bg-[#1a2332]/50'
@@ -244,6 +236,7 @@ export default function DocumentsView() {
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ delay: index * 0.02 }}
                     className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 transition-colors group"
+                    style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0' }}
                   >
                     {/* File Icon */}
                     <div className={`w-11 h-11 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
