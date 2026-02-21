@@ -231,10 +231,10 @@ export default function DocumentsView() {
                 <div
                   key={doc.id}
                   className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 group"
-                  style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0' }}
+                  style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0', minHeight: '60px', paddingLeft: '8px' }}
                 >
                     {/* File Icon */}
-                    <div className={`w-11 h-11 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
+                    <div className={`w-12 h-12 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
                       {fileConfig.icon}
                     </div>
 
