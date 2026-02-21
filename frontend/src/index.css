@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent: #007AFF;
-  --color-accent-light: #5AC8FA;
+  /* Neo4j 风格的深色主题色板 */
+  --color-neo-bg: #0a0e17;
+  --color-neo-surface: #111827;
+  --color-neo-surface-light: #1a2332;
+  --color-neo-surface-hover: #232d3f;
+  --color-neo-border: #2a3548;
+  --color-neo-border-light: #3b4a61;
+  --color-neo-accent: #00b4d8;
+  --color-neo-accent-light: #48cae4;
+  --color-neo-accent-dark: #0096c7;
+  --color-neo-green: #00c853;
+  --color-neo-orange: #ff9800;
+  --color-neo-red: #f44336;
+  --color-neo-purple: #9c27b0;
+  --color-neo-text: #f0f4f8;
+  --color-neo-text-secondary: #94a3b8;
+  --color-neo-text-muted: #64748b;
 }
 
 * {
@@ -12,10 +27,10 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
-    system-ui, 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  background: linear-gradient(145deg, #f5f5f7 0%, #ebebf0 40%, #e2e2ea 100%);
-  color: #1d1d1f;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  background: var(--color-neo-bg);
+  color: var(--color-neo-text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -25,57 +40,93 @@ body {
   min-height: 100vh;
 }
 
-/* ── Glass morphism ── */
-.glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+/* ── Neo4j Dark Theme Cards ── */
+.neo-card {
+  background: var(--color-neo-surface);
+  border: 1px solid var(--color-neo-border);
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
-.glass-heavy {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(30px) saturate(200%);
-  -webkit-backdrop-filter: blur(30px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.45);
+.neo-card:hover {
+  border-color: var(--color-neo-border-light);
 }
 
-.glass-sidebar {
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border-right: 1px solid rgba(255, 255, 255, 0.25);
+.neo-card-elevated {
+  background: var(--color-neo-surface-light);
+  border: 1px solid var(--color-neo-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
 }
 
-/* ── Shadows ── */
-.shadow-glass {
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.04),
-    0 4px 6px rgba(0, 0, 0, 0.04),
-    0 12px 20px rgba(0, 0, 0, 0.03);
+.neo-sidebar {
+  background: var(--color-neo-surface);
+  border-right: 1px solid var(--color-neo-border);
 }
 
-.shadow-glass-lg {
-  box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.04),
-    0 8px 16px rgba(0, 0, 0, 0.06),
-    0 24px 48px rgba(0, 0, 0, 0.04);
+/* ── Buttons ── */
+.neo-btn-primary {
+  background: linear-gradient(135deg, var(--color-neo-accent) 0%, var(--color-neo-accent-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 180, 216, 0.3);
+}
+
+.neo-btn-primary:hover {
+  box-shadow: 0 4px 16px rgba(0, 180, 216, 0.4);
+  transform: translateY(-1px);
+}
+
+.neo-btn-secondary {
+  background: var(--color-neo-surface-light);
+  color: var(--color-neo-text);
+  border: 1px solid var(--color-neo-border);
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.neo-btn-secondary:hover {
+  background: var(--color-neo-surface-hover);
+  border-color: var(--color-neo-border-light);
+}
+
+/* ── Input ── */
+.neo-input {
+  background: var(--color-neo-surface);
+  border: 1px solid var(--color-neo-border);
+  border-radius: 8px;
+  color: var(--color-neo-text);
+  transition: all 0.2s ease;
+}
+
+.neo-input:focus {
+  outline: none;
+  border-color: var(--color-neo-accent);
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.15);
+}
+
+.neo-input::placeholder {
+  color: var(--color-neo-text-muted);
 }
 
 /* ── Scrollbar (WebKit) ── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-neo-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 3px;
+  background: var(--color-neo-border);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--color-neo-border-light);
 }
 
 /* ── Utility ── */
@@ -84,4 +135,43 @@ body {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* ── Status Colors ── */
+.status-running {
+  color: var(--color-neo-accent);
+}
+.status-completed {
+  color: var(--color-neo-green);
+}
+.status-pending {
+  color: var(--color-neo-text-muted);
+}
+.status-error {
+  color: var(--color-neo-red);
+}
+
+/* ── Graph Node Colors ── */
+.node-concept { background: #3b82f6; }
+.node-technology { background: #22c55e; }
+.node-method { background: #f59e0b; }
+.node-application { background: #a855f7; }
+.node-model { background: #ec4899; }
+
+/* ── Glow Effects ── */
+.glow-accent {
+  box-shadow: 0 0 20px rgba(0, 180, 216, 0.3);
+}
+
+/* ── Progress Bar ── */
+.neo-progress {
+  background: var(--color-neo-surface-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.neo-progress-bar {
+  background: linear-gradient(90deg, var(--color-neo-accent) 0%, var(--color-neo-accent-light) 100%);
+  height: 100%;
+  transition: width 0.3s ease;
 }

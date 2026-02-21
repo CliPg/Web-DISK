@@ -14,7 +14,7 @@ import {
   X,
   FolderOpen,
 } from 'lucide-react'
-import GlassCard from '../components/ui/GlassCard'
+import NeoCard from '../components/ui/GlassCard'
 import { mockDocuments } from '../data/mock'
 import type { KGDocument } from '../types'
 
@@ -22,42 +22,42 @@ const statusConfig = {
   pending: {
     icon: Clock,
     label: '等待处理',
-    color: 'text-gray-400',
-    bg: 'bg-gray-100',
-    dotColor: '#8E8E93',
+    color: 'text-[#64748b]',
+    bg: 'bg-[#64748b]/10',
+    dotColor: '#64748b',
     animate: false,
   },
   processing: {
     icon: Loader2,
     label: '处理中',
-    color: 'text-blue-500',
-    bg: 'bg-blue-50',
-    dotColor: '#007AFF',
+    color: 'text-[#00b4d8]',
+    bg: 'bg-[#00b4d8]/10',
+    dotColor: '#00b4d8',
     animate: true,
   },
   completed: {
     icon: CheckCircle2,
     label: '已完成',
-    color: 'text-green-500',
-    bg: 'bg-green-50',
-    dotColor: '#34C759',
+    color: 'text-[#00c853]',
+    bg: 'bg-[#00c853]/10',
+    dotColor: '#00c853',
     animate: false,
   },
   error: {
     icon: AlertCircle,
     label: '处理失败',
-    color: 'text-red-500',
-    bg: 'bg-red-50',
-    dotColor: '#FF3B30',
+    color: 'text-[#f44336]',
+    bg: 'bg-[#f44336]/10',
+    dotColor: '#f44336',
     animate: false,
   },
 }
 
 const fileTypeConfig: Record<string, { icon: string; color: string; bg: string }> = {
-  pdf: { icon: '📄', color: '#FF3B30', bg: 'bg-red-50' },
-  docx: { icon: '📝', color: '#007AFF', bg: 'bg-blue-50' },
-  txt: { icon: '📃', color: '#8E8E93', bg: 'bg-gray-50' },
-  md: { icon: '📋', color: '#AF52DE', bg: 'bg-purple-50' },
+  pdf: { icon: '📄', color: '#f44336', bg: 'bg-[#f44336]/10' },
+  docx: { icon: '📝', color: '#3b82f6', bg: 'bg-[#3b82f6]/10' },
+  txt: { icon: '📃', color: '#64748b', bg: 'bg-[#64748b]/10' },
+  md: { icon: '📋', color: '#a855f7', bg: 'bg-[#a855f7]/10' },
 }
 
 export default function DocumentsView() {
@@ -128,10 +128,10 @@ export default function DocumentsView() {
   }
 
   const stats = [
-    { key: 'all', label: '全部', value: documents.length, color: '#1d1d1f' },
-    { key: 'processing', label: '处理中', value: documents.filter((d) => d.status === 'processing').length, color: '#007AFF' },
-    { key: 'completed', label: '已完成', value: documents.filter((d) => d.status === 'completed').length, color: '#34C759' },
-    { key: 'pending', label: '待处理', value: documents.filter((d) => d.status === 'pending').length, color: '#8E8E93' },
+    { key: 'all', label: '全部', value: documents.length, color: '#f0f4f8' },
+    { key: 'processing', label: '处理中', value: documents.filter((d) => d.status === 'processing').length, color: '#00b4d8' },
+    { key: 'completed', label: '已完成', value: documents.filter((d) => d.status === 'completed').length, color: '#00c853' },
+    { key: 'pending', label: '待处理', value: documents.filter((d) => d.status === 'pending').length, color: '#64748b' },
   ]
 
   const filteredDocuments = activeFilter === 'all' 
@@ -139,20 +139,20 @@ export default function DocumentsView() {
     : documents.filter((d) => d.status === activeFilter)
 
   return (
-    <div className="space-y-8">
+    <div className="h-full flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">文档管理</h1>
-          <p className="text-gray-500 mt-1">上传和管理您的知识文档</p>
+          <h1 className="text-xl font-semibold text-[#f0f4f8]">文档管理</h1>
+          <p className="text-[#64748b] text-sm mt-0.5">上传和管理您的知识文档</p>
         </div>
         <motion.button
-          className="px-6 py-3 bg-[#007AFF] text-white rounded-xl font-medium text-[15px] flex items-center gap-2.5 shadow-lg shadow-[#007AFF]/25"
-          whileHover={{ scale: 1.02, y: -1 }}
+          className="px-5 py-2.5 neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2"
+          whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="w-5 h-5" />
+          <Upload className="w-4 h-4" />
           上传文档
         </motion.button>
         <input
@@ -165,31 +165,30 @@ export default function DocumentsView() {
         />
       </div>
 
-      {/* Upload Area - 更大更明显 */}
-      <GlassCard
-        className={`p-8 border-2 border-dashed transition-all duration-300 ${
+      {/* Upload Area */}
+      <NeoCard
+        className={`p-6 border-2 border-dashed transition-all duration-300 ${
           isDragging
-            ? 'border-[#007AFF] bg-[#007AFF]/5 scale-[1.01]'
-            : 'border-gray-200/60 hover:border-gray-300/80'
+            ? 'border-[#00b4d8] bg-[#00b4d8]/5'
+            : 'border-[#2a3548] hover:border-[#3b4a61]'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="flex flex-col items-center justify-center py-6">
+        <div className="flex flex-col items-center justify-center py-4">
           <motion.div
-            className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 ${
-              isDragging ? 'bg-[#007AFF]/10' : 'bg-gray-100'
-            }`}
-            animate={{ scale: isDragging ? 1.15 : 1, rotate: isDragging ? 5 : 0 }}
-            transition={{ type: 'spring', stiffness: 300 }}
+            className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
+              isDragging ? 'bg-[#00b4d8]/10' : 'bg-[#1a2332]'
+            } border border-[#2a3548]`}
+            animate={{ scale: isDragging ? 1.1 : 1 }}
           >
-            <Upload className={`w-8 h-8 ${isDragging ? 'text-[#007AFF]' : 'text-gray-400'}`} />
+            <Upload className={`w-6 h-6 ${isDragging ? 'text-[#00b4d8]' : 'text-[#64748b]'}`} />
           </motion.div>
-          <p className="text-gray-800 font-medium text-lg mb-2">拖拽文件到此处上传</p>
-          <p className="text-sm text-gray-400 mb-4">支持 PDF、DOCX、TXT、Markdown 格式</p>
+          <p className="text-[#f0f4f8] font-medium mb-1">拖拽文件到此处上传</p>
+          <p className="text-sm text-[#64748b] mb-3">支持 PDF、DOCX、TXT、Markdown 格式</p>
           <motion.button
-            className="px-5 py-2.5 text-[15px] text-[#007AFF] font-medium rounded-xl hover:bg-[#007AFF]/5 transition-colors"
+            className="px-4 py-2 text-sm text-[#00b4d8] font-medium rounded-lg hover:bg-[#00b4d8]/10 transition-colors"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => fileInputRef.current?.click()}
@@ -197,28 +196,27 @@ export default function DocumentsView() {
             或点击选择文件
           </motion.button>
         </div>
-      </GlassCard>
+      </NeoCard>
 
-      {/* Stats & Filter Tabs - 合并为一体 */}
-      <div className="flex items-center gap-2 p-2 glass rounded-2xl w-fit">
+      {/* Stats & Filter Tabs */}
+      <div className="flex items-center gap-2 p-1.5 neo-card w-fit">
         {stats.map((stat) => (
           <motion.button
             key={stat.key}
-            className={`px-5 py-3 rounded-xl flex items-center gap-3 transition-all ${
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all ${
               activeFilter === stat.key
-                ? 'bg-white shadow-sm'
-                : 'hover:bg-white/50'
+                ? 'bg-[#1a2332] border border-[#2a3548]'
+                : 'hover:bg-[#1a2332]/50'
             }`}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setActiveFilter(stat.key)}
           >
-            <span className={`text-[15px] ${activeFilter === stat.key ? 'text-gray-800 font-medium' : 'text-gray-500'}`}>
+            <span className={`text-sm ${activeFilter === stat.key ? 'text-[#f0f4f8] font-medium' : 'text-[#94a3b8]'}`}>
               {stat.label}
             </span>
             <span
-              className={`text-[15px] font-semibold px-2.5 py-1 rounded-lg ${
-                activeFilter === stat.key ? 'bg-gray-100' : 'bg-transparent'
+              className={`text-sm font-semibold px-2 py-0.5 rounded-md ${
+                activeFilter === stat.key ? 'bg-[#0a0e17]' : 'bg-transparent'
               }`}
               style={{ color: stat.color }}
             >
@@ -228,10 +226,10 @@ export default function DocumentsView() {
         ))}
       </div>
 
-      {/* Document List - 表格式布局更整洁 */}
+      {/* Document List */}
       {filteredDocuments.length > 0 ? (
-        <GlassCard className="overflow-hidden" variant="heavy">
-          <div className="divide-y divide-gray-100">
+        <NeoCard className="flex-1 overflow-hidden" variant="elevated">
+          <div className="divide-y divide-[#2a3548]">
             <AnimatePresence mode="popLayout">
               {filteredDocuments.map((doc, index) => {
                 const status = statusConfig[doc.status]
@@ -245,17 +243,17 @@ export default function DocumentsView() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     transition={{ delay: index * 0.02 }}
-                    className="flex items-center gap-5 p-5 hover:bg-black/[0.02] transition-colors group"
+                    className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 transition-colors group"
                   >
                     {/* File Icon */}
-                    <div className={`w-12 h-12 rounded-xl ${fileConfig.bg} flex items-center justify-center text-2xl shrink-0`}>
+                    <div className={`w-11 h-11 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
                       {fileConfig.icon}
                     </div>
 
                     {/* File Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-800 truncate mb-1">{doc.name}</h3>
-                      <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <h3 className="font-medium text-[#f0f4f8] truncate mb-0.5">{doc.name}</h3>
+                      <div className="flex items-center gap-2 text-xs text-[#64748b]">
                         <span>{doc.size}</span>
                         <span>·</span>
                         <span>{doc.pages} 页</span>
@@ -265,36 +263,36 @@ export default function DocumentsView() {
                     </div>
 
                     {/* Status */}
-                    <div className="flex items-center gap-6 shrink-0">
+                    <div className="flex items-center gap-4 shrink-0">
                       {/* Progress or Status Badge */}
                       {doc.status === 'processing' ? (
-                        <div className="flex items-center gap-3 w-32">
-                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="flex items-center gap-2 w-28">
+                          <div className="flex-1 h-1.5 neo-progress overflow-hidden">
                             <motion.div
-                              className="h-full bg-[#007AFF] rounded-full"
+                              className="neo-progress-bar"
                               initial={{ width: 0 }}
                               animate={{ width: `${doc.progress}%` }}
                             />
                           </div>
-                          <span className="text-sm text-[#007AFF] font-medium w-10 text-right">{doc.progress}%</span>
+                          <span className="text-xs text-[#00b4d8] font-medium w-9 text-right">{doc.progress}%</span>
                         </div>
                       ) : (
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${status.bg}`}>
-                          <StatusIcon className={`w-4 h-4 ${status.color} ${status.animate ? 'animate-spin' : ''}`} />
-                          <span className={`text-sm font-medium ${status.color}`}>{status.label}</span>
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md ${status.bg}`}>
+                          <StatusIcon className={`w-3.5 h-3.5 ${status.color} ${status.animate ? 'animate-spin' : ''}`} />
+                          <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
                         </div>
                       )}
 
                       {/* Extracted Stats */}
                       {doc.status === 'completed' && doc.entities && (
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-3 text-xs">
                           <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full bg-[#007AFF]" />
-                            <span className="text-gray-500">{doc.entities} 实体</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]" />
+                            <span className="text-[#94a3b8]">{doc.entities} 实体</span>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <div className="w-2 h-2 rounded-full bg-[#34C759]" />
-                            <span className="text-gray-500">{doc.relations} 关系</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#00c853]" />
+                            <span className="text-[#94a3b8]">{doc.relations} 关系</span>
                           </div>
                         </div>
                       )}
@@ -302,14 +300,14 @@ export default function DocumentsView() {
                       {/* Actions */}
                       <div className="relative">
                         <motion.button
-                          className="w-9 h-9 rounded-lg hover:bg-black/5 flex items-center justify-center text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="w-8 h-8 rounded-lg hover:bg-[#2a3548] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8] opacity-0 group-hover:opacity-100 transition-all"
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation()
                             setMenuOpen(menuOpen === doc.id ? null : doc.id)
                           }}
                         >
-                          <MoreHorizontal className="w-5 h-5" />
+                          <MoreHorizontal className="w-4 h-4" />
                         </motion.button>
 
                         {/* Dropdown Menu */}
@@ -319,10 +317,10 @@ export default function DocumentsView() {
                               initial={{ opacity: 0, scale: 0.95, y: -5 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                              className="absolute right-0 top-11 w-40 glass-heavy shadow-glass-lg rounded-xl py-2 z-20"
+                              className="absolute right-0 top-10 w-36 neo-card-elevated py-1.5 z-20"
                             >
                               <button
-                                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-black/5 flex items-center gap-3"
+                                className="w-full px-3 py-2 text-left text-sm text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8] flex items-center gap-2"
                                 onClick={() => {
                                   setSelectedDoc(doc)
                                   setMenuOpen(null)
@@ -333,7 +331,7 @@ export default function DocumentsView() {
                               </button>
                               {doc.status === 'error' && (
                                 <button
-                                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-black/5 flex items-center gap-3"
+                                  className="w-full px-3 py-2 text-left text-sm text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8] flex items-center gap-2"
                                   onClick={() => handleRetry(doc.id)}
                                 >
                                   <RefreshCw className="w-4 h-4" />
@@ -341,7 +339,7 @@ export default function DocumentsView() {
                                 </button>
                               )}
                               <button
-                                className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-3"
+                                className="w-full px-3 py-2 text-left text-sm text-[#f44336] hover:bg-[#f44336]/10 flex items-center gap-2"
                                 onClick={() => handleDelete(doc.id)}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -357,19 +355,19 @@ export default function DocumentsView() {
               })}
             </AnimatePresence>
           </div>
-        </GlassCard>
+        </NeoCard>
       ) : (
         /* Empty State */
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-16"
+          className="flex-1 flex flex-col items-center justify-center"
         >
-          <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <FolderOpen className="w-10 h-10 text-gray-300" />
+          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
+            <FolderOpen className="w-8 h-8 text-[#64748b]" />
           </div>
-          <p className="text-gray-500 text-lg mb-1">暂无文档</p>
-          <p className="text-sm text-gray-400">上传您的第一个文档开始构建知识图谱</p>
+          <p className="text-[#94a3b8] mb-1">暂无文档</p>
+          <p className="text-sm text-[#64748b]">上传您的第一个文档开始构建知识图谱</p>
         </motion.div>
       )}
 
@@ -377,70 +375,70 @@ export default function DocumentsView() {
       <AnimatePresence>
         {selectedDoc && (
           <motion.div
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedDoc(null)}
           >
             <motion.div
-              className="glass-heavy shadow-glass-lg rounded-2xl p-8 w-full max-w-lg"
+              className="neo-card-elevated p-6 w-full max-w-md"
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className={`w-16 h-16 rounded-xl ${fileTypeConfig[selectedDoc.fileType]?.bg || 'bg-gray-100'} flex items-center justify-center text-4xl`}>
+              <div className="flex items-start justify-between mb-5">
+                <div className={`w-14 h-14 rounded-xl ${fileTypeConfig[selectedDoc.fileType]?.bg || 'bg-[#1a2332]'} flex items-center justify-center text-3xl`}>
                   {fileTypeConfig[selectedDoc.fileType]?.icon || '📄'}
                 </div>
                 <motion.button
-                  className="w-9 h-9 rounded-lg hover:bg-black/5 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSelectedDoc(null)}
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </motion.button>
               </div>
 
-              <h2 className="text-xl font-semibold text-gray-800 mb-2">{selectedDoc.name}</h2>
-              <p className="text-sm text-gray-500 mb-8">上传于 {selectedDoc.uploadedAt}</p>
+              <h2 className="text-lg font-semibold text-[#f0f4f8] mb-1">{selectedDoc.name}</h2>
+              <p className="text-sm text-[#64748b] mb-6">上传于 {selectedDoc.uploadedAt}</p>
 
-              <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="p-4 rounded-xl bg-gray-50">
-                  <p className="text-xs text-gray-400 mb-1">文件大小</p>
-                  <p className="font-semibold text-gray-700">{selectedDoc.size}</p>
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                  <p className="text-xs text-[#64748b] mb-0.5">文件大小</p>
+                  <p className="font-medium text-[#f0f4f8]">{selectedDoc.size}</p>
                 </div>
-                <div className="p-4 rounded-xl bg-gray-50">
-                  <p className="text-xs text-gray-400 mb-1">页数</p>
-                  <p className="font-semibold text-gray-700">{selectedDoc.pages} 页</p>
+                <div className="p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                  <p className="text-xs text-[#64748b] mb-0.5">页数</p>
+                  <p className="font-medium text-[#f0f4f8]">{selectedDoc.pages} 页</p>
                 </div>
                 {selectedDoc.entities && (
                   <>
-                    <div className="p-4 rounded-xl bg-blue-50">
-                      <p className="text-xs text-blue-400 mb-1">提取实体</p>
-                      <p className="font-semibold text-blue-600">{selectedDoc.entities} 个</p>
+                    <div className="p-3 rounded-lg bg-[#3b82f6]/10 border border-[#3b82f6]/30">
+                      <p className="text-xs text-[#3b82f6] mb-0.5">提取实体</p>
+                      <p className="font-medium text-[#3b82f6]">{selectedDoc.entities} 个</p>
                     </div>
-                    <div className="p-4 rounded-xl bg-green-50">
-                      <p className="text-xs text-green-400 mb-1">提取关系</p>
-                      <p className="font-semibold text-green-600">{selectedDoc.relations} 个</p>
+                    <div className="p-3 rounded-lg bg-[#00c853]/10 border border-[#00c853]/30">
+                      <p className="text-xs text-[#00c853] mb-0.5">提取关系</p>
+                      <p className="font-medium text-[#00c853]">{selectedDoc.relations} 个</p>
                     </div>
                   </>
                 )}
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <motion.button
-                  className="flex-1 px-5 py-3 bg-[#007AFF] text-white rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg shadow-[#007AFF]/20"
-                  whileHover={{ scale: 1.02, y: -1 }}
+                  className="flex-1 px-4 py-2.5 neo-btn-primary rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <FileText className="w-4 h-4" />
                   查看图谱
                 </motion.button>
                 <motion.button
-                  className="px-5 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2.5 neo-btn-secondary rounded-lg font-medium text-sm"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

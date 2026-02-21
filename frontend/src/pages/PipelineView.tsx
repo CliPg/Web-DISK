@@ -14,46 +14,46 @@ import {
   Terminal,
   FileText,
 } from 'lucide-react'
-import GlassCard from '../components/ui/GlassCard'
+import NeoCard from '../components/ui/GlassCard'
 import { mockPipelineRun, mockLogs } from '../data/mock'
 import type { LogEntry } from '../types'
 
 const stageStatusConfig = {
   pending: {
     icon: Circle,
-    color: '#8E8E93',
-    bg: 'bg-gray-100',
+    color: '#64748b',
+    bg: 'bg-[#64748b]/10',
     text: '等待中',
     animate: false,
   },
   running: {
     icon: Loader2,
-    color: '#007AFF',
-    bg: 'bg-blue-50',
+    color: '#00b4d8',
+    bg: 'bg-[#00b4d8]/10',
     text: '进行中',
     animate: true,
   },
   completed: {
     icon: CheckCircle2,
-    color: '#34C759',
-    bg: 'bg-green-50',
+    color: '#00c853',
+    bg: 'bg-[#00c853]/10',
     text: '已完成',
     animate: false,
   },
   error: {
     icon: AlertCircle,
-    color: '#FF3B30',
-    bg: 'bg-red-50',
+    color: '#f44336',
+    bg: 'bg-[#f44336]/10',
     text: '错误',
     animate: false,
   },
 }
 
 const logLevelConfig = {
-  info: { color: '#007AFF', bg: 'bg-blue-50' },
-  warning: { color: '#FF9500', bg: 'bg-orange-50' },
-  error: { color: '#FF3B30', bg: 'bg-red-50' },
-  success: { color: '#34C759', bg: 'bg-green-50' },
+  info: { color: '#00b4d8', bg: 'bg-[#00b4d8]/10' },
+  warning: { color: '#ff9800', bg: 'bg-[#ff9800]/10' },
+  error: { color: '#f44336', bg: 'bg-[#f44336]/10' },
+  success: { color: '#00c853', bg: 'bg-[#00c853]/10' },
 }
 
 export default function PipelineView() {
@@ -93,73 +93,73 @@ export default function PipelineView() {
   const completedStages = pipeline.stages.filter((s) => s.status === 'completed').length
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">流程监控</h1>
-          <p className="text-gray-500 mt-1">实时追踪知识抽取进度</p>
+          <h1 className="text-xl font-semibold text-[#f0f4f8]">流程监控</h1>
+          <p className="text-[#64748b] text-sm mt-0.5">实时追踪知识抽取进度</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <motion.button
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-glass ${
-              isPaused ? 'bg-[#007AFF] text-white' : 'glass text-gray-600'
+            className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+              isPaused ? 'neo-btn-primary' : 'neo-btn-secondary'
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsPaused(!isPaused)}
           >
-            {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
+            {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4 text-[#94a3b8]" />}
           </motion.button>
           <motion.button
-            className="w-10 h-10 glass rounded-xl flex items-center justify-center text-gray-600 shadow-glass"
+            className="w-9 h-9 neo-btn-secondary rounded-lg flex items-center justify-center"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            <RotateCcw className="w-5 h-5" />
+            <RotateCcw className="w-4 h-4 text-[#94a3b8]" />
           </motion.button>
         </div>
       </div>
 
       {/* Current Task Card */}
-      <GlassCard className="p-5" variant="heavy">
+      <NeoCard className="p-5" variant="elevated">
         <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#007AFF]/10 flex items-center justify-center shrink-0">
-              <FileText className="w-6 h-6 text-[#007AFF]" />
+            <div className="w-12 h-12 rounded-xl bg-[#00b4d8]/10 flex items-center justify-center shrink-0 border border-[#00b4d8]/30">
+              <FileText className="w-6 h-6 text-[#00b4d8]" />
             </div>
             <div>
-              <h2 className="font-semibold text-gray-800">{pipeline.documentName}</h2>
+              <h2 className="font-semibold text-[#f0f4f8]">{pipeline.documentName}</h2>
               <div className="flex items-center gap-2 mt-1">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <span className="text-sm text-gray-500">开始于 {pipeline.startTime}</span>
+                <Clock className="w-4 h-4 text-[#64748b]" />
+                <span className="text-sm text-[#64748b]">开始于 {pipeline.startTime}</span>
               </div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-semibold text-[#007AFF]">{pipeline.overallProgress}%</div>
-            <div className="text-sm text-gray-500">
+            <div className="text-3xl font-bold text-[#00b4d8]">{pipeline.overallProgress}%</div>
+            <div className="text-sm text-[#64748b]">
               {completedStages}/{pipeline.stages.length} 阶段完成
             </div>
           </div>
         </div>
 
         {/* Overall Progress Bar */}
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 neo-progress">
           <motion.div
-            className="h-full bg-gradient-to-r from-[#007AFF] to-[#5AC8FA] rounded-full"
+            className="neo-progress-bar"
             initial={{ width: 0 }}
             animate={{ width: `${pipeline.overallProgress}%` }}
             transition={{ duration: 0.3 }}
           />
         </div>
-      </GlassCard>
+      </NeoCard>
 
       {/* Two Column Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
         {/* Pipeline Stages */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">处理阶段</h3>
+        <div className="space-y-3 overflow-y-auto">
+          <h3 className="text-sm font-medium text-[#64748b] mb-2">处理阶段</h3>
           {pipeline.stages.map((stage, index) => {
             const config = stageStatusConfig[stage.status]
             const StatusIcon = config.icon
@@ -173,7 +173,7 @@ export default function PipelineView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <GlassCard className={`overflow-hidden ${isActive ? 'ring-2 ring-[#007AFF]/20' : ''}`}>
+                <NeoCard className={`overflow-hidden ${isActive ? 'ring-1 ring-[#00b4d8]/30' : ''}`}>
                   {/* Stage Header */}
                   <div
                     className="p-4 flex items-center gap-3 cursor-pointer"
@@ -190,8 +190,9 @@ export default function PipelineView() {
                       <div
                         className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium"
                         style={{
-                          backgroundColor: stage.status === 'completed' ? config.color : '#e5e5ea',
-                          color: stage.status === 'completed' ? 'white' : '#8e8e93',
+                          backgroundColor: stage.status === 'completed' ? config.color : '#1a2332',
+                          color: stage.status === 'completed' ? 'white' : '#64748b',
+                          border: stage.status !== 'completed' ? '1px solid #2a3548' : 'none',
                         }}
                       >
                         {index + 1}
@@ -200,35 +201,35 @@ export default function PipelineView() {
 
                     {/* Stage Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-800 truncate">{stage.name}</h3>
-                      <p className="text-sm text-gray-500 truncate">{stage.description}</p>
+                      <h3 className="font-medium text-[#f0f4f8] truncate">{stage.name}</h3>
+                      <p className="text-sm text-[#64748b] truncate">{stage.description}</p>
                     </div>
 
                     {/* Progress / Time */}
                     <div className="text-right shrink-0">
                       {stage.status === 'running' && (
-                        <span className="text-[#007AFF] font-medium">{stage.progress}%</span>
+                        <span className="text-[#00b4d8] font-medium">{stage.progress}%</span>
                       )}
                       {stage.status === 'completed' && stage.endTime && (
-                        <span className="text-sm text-gray-400">{stage.endTime}</span>
+                        <span className="text-sm text-[#64748b]">{stage.endTime}</span>
                       )}
                       {stage.status === 'pending' && (
-                        <span className="text-sm text-gray-400">等待中</span>
+                        <span className="text-sm text-[#64748b]">等待中</span>
                       )}
                     </div>
 
                     {/* Expand Icon */}
                     <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                      <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
+                      <ChevronDown className="w-5 h-5 text-[#64748b] shrink-0" />
                     </motion.div>
                   </div>
 
                   {/* Progress Bar for Running Stage */}
                   {stage.status === 'running' && (
                     <div className="px-4 pb-3">
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 neo-progress">
                         <motion.div
-                          className="h-full bg-[#007AFF] rounded-full"
+                          className="neo-progress-bar"
                           initial={{ width: 0 }}
                           animate={{ width: `${stage.progress}%` }}
                         />
@@ -244,54 +245,54 @@ export default function PipelineView() {
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="border-t border-gray-100 overflow-hidden"
+                        className="border-t border-[#2a3548] overflow-hidden"
                       >
-                        <div className="p-4 bg-gray-50/50">
+                        <div className="p-4 bg-[#0a0e17]/50">
                           <div className="grid grid-cols-3 gap-3 mb-3">
                             <div>
-                              <p className="text-xs text-gray-400 mb-1">状态</p>
+                              <p className="text-xs text-[#64748b] mb-1">状态</p>
                               <p className="text-sm font-medium" style={{ color: config.color }}>
                                 {config.text}
                               </p>
                             </div>
                             {stage.startTime && (
                               <div>
-                                <p className="text-xs text-gray-400 mb-1">开始时间</p>
-                                <p className="text-sm text-gray-700">{stage.startTime}</p>
+                                <p className="text-xs text-[#64748b] mb-1">开始时间</p>
+                                <p className="text-sm text-[#94a3b8]">{stage.startTime}</p>
                               </div>
                             )}
                             {stage.endTime && (
                               <div>
-                                <p className="text-xs text-gray-400 mb-1">结束时间</p>
-                                <p className="text-sm text-gray-700">{stage.endTime}</p>
+                                <p className="text-xs text-[#64748b] mb-1">结束时间</p>
+                                <p className="text-sm text-[#94a3b8]">{stage.endTime}</p>
                               </div>
                             )}
                           </div>
                           {stage.details && (
-                            <div className="p-3 rounded-lg bg-white border border-gray-100">
-                              <p className="text-sm text-gray-600">{stage.details}</p>
+                            <div className="p-3 rounded-lg bg-[#111827] border border-[#2a3548]">
+                              <p className="text-sm text-[#94a3b8]">{stage.details}</p>
                             </div>
                           )}
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </GlassCard>
+                </NeoCard>
               </motion.div>
             )
           })}
         </div>
 
         {/* Activity Log */}
-        <div>
-          <GlassCard className="p-5 h-fit" variant="heavy">
+        <div className="flex flex-col min-h-0">
+          <NeoCard className="p-5 flex-1 flex flex-col" variant="elevated">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-gray-600" />
-                <h3 className="font-medium text-gray-800">活动日志</h3>
+                <Terminal className="w-5 h-5 text-[#00b4d8]" />
+                <h3 className="font-medium text-[#f0f4f8]">活动日志</h3>
               </div>
               <motion.button
-                className="text-sm text-[#007AFF] flex items-center gap-1"
+                className="text-sm text-[#00b4d8] flex items-center gap-1"
                 whileHover={{ scale: 1.02 }}
                 onClick={() => setShowAllLogs(!showAllLogs)}
               >
@@ -300,7 +301,7 @@ export default function PipelineView() {
               </motion.button>
             </div>
 
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <div className="space-y-2 flex-1 overflow-y-auto">
               <AnimatePresence>
                 {(showAllLogs ? logs : logs.slice(0, 6)).map((log, index) => {
                   const levelConfig = logLevelConfig[log.level]
@@ -311,22 +312,22 @@ export default function PipelineView() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ delay: index * 0.02 }}
-                      className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0"
+                      className="flex items-start gap-3 py-2 border-b border-[#2a3548] last:border-0"
                     >
-                      <span className="text-xs text-gray-400 font-mono w-14 shrink-0">{log.timestamp}</span>
+                      <span className="text-xs text-[#64748b] font-mono w-14 shrink-0">{log.timestamp}</span>
                       <div
                         className={`px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${levelConfig.bg}`}
                         style={{ color: levelConfig.color }}
                       >
                         {log.level.toUpperCase().slice(0, 4)}
                       </div>
-                      <p className="text-sm text-gray-600 flex-1 min-w-0">{log.message}</p>
+                      <p className="text-sm text-[#94a3b8] flex-1 min-w-0">{log.message}</p>
                     </motion.div>
                   )
                 })}
               </AnimatePresence>
             </div>
-          </GlassCard>
+          </NeoCard>
         </div>
       </div>
     </div>

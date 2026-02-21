@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2 } from 'lucide-react'
-import GlassCard from '../components/ui/GlassCard'
+import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers } from 'lucide-react'
+import NeoCard from '../components/ui/GlassCard'
 import { mockNodes, mockEdges } from '../data/mock'
 import type { KGNode } from '../types'
 
@@ -13,12 +13,12 @@ interface NodePosition {
   vy: number
 }
 
-const nodeColors: Record<KGNode['type'], { bg: string; border: string; text: string }> = {
-  concept:     { bg: '#007AFF', border: '#0055CC', text: '#FFFFFF' },
-  technology:  { bg: '#34C759', border: '#248A3D', text: '#FFFFFF' },
-  method:      { bg: '#FF9500', border: '#C93400', text: '#FFFFFF' },
-  application: { bg: '#AF52DE', border: '#8944AB', text: '#FFFFFF' },
-  model:       { bg: '#FF2D55', border: '#D70015', text: '#FFFFFF' },
+const nodeColors: Record<KGNode['type'], { bg: string; border: string; glow: string }> = {
+  concept:     { bg: '#3b82f6', border: '#60a5fa', glow: 'rgba(59, 130, 246, 0.4)' },
+  technology:  { bg: '#22c55e', border: '#4ade80', glow: 'rgba(34, 197, 94, 0.4)' },
+  method:      { bg: '#f59e0b', border: '#fbbf24', glow: 'rgba(245, 158, 11, 0.4)' },
+  application: { bg: '#a855f7', border: '#c084fc', glow: 'rgba(168, 85, 247, 0.4)' },
+  model:       { bg: '#ec4899', border: '#f472b6', glow: 'rgba(236, 72, 153, 0.4)' },
 }
 
 const typeLabels: Record<KGNode['type'], string> = {
@@ -60,7 +60,6 @@ export default function GraphView() {
       setPositions(initialPositions)
     }
 
-    // Delay to ensure container is rendered
     const timer = setTimeout(updateDimensions, 100)
     window.addEventListener('resize', updateDimensions)
     return () => {
@@ -125,7 +124,6 @@ export default function GraphView() {
           n.vy *= 0.88
           n.x += n.vx
           n.y += n.vy
-          // Boundary constraints
           n.x = Math.max(50, Math.min(dimensions.width - 50, n.x))
           n.y = Math.max(50, Math.min(dimensions.height - 50, n.y))
         })
@@ -159,63 +157,69 @@ export default function GraphView() {
   const connectedToHovered = hoveredNode ? getConnectedNodes(hoveredNode) : new Set<string>()
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">知识图谱</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-xl font-semibold text-[#f0f4f8]">知识图谱</h1>
+          <p className="text-[#64748b] text-sm mt-0.5">
             {mockNodes.length} 个实体 · {mockEdges.length} 个关系
           </p>
         </div>
         {/* Legend */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 px-4 py-2 neo-card">
           {Object.entries(nodeColors).map(([type, colors]) => (
-            <div key={type} className="flex items-center gap-1.5">
+            <div key={type} className="flex items-center gap-2">
               <div
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: colors.bg }}
               />
-              <span className="text-sm text-gray-500">{typeLabels[type as KGNode['type']]}</span>
+              <span className="text-xs text-[#94a3b8]">{typeLabels[type as KGNode['type']]}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex gap-6" style={{ height: 'calc(100vh - 180px)' }}>
+      <div className="flex-1 flex gap-4 min-h-0">
         {/* Graph Area */}
-        <GlassCard className="flex-1 relative overflow-hidden" variant="heavy">
+        <NeoCard className="flex-1 relative overflow-hidden p-0" variant="elevated">
           {/* Zoom Controls */}
           <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
             <motion.button
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 shadow-glass"
+              className="w-9 h-9 neo-btn-secondary flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setZoom((z) => Math.min(2, z + 0.2))}
             >
-              <ZoomIn className="w-4 h-4" />
+              <ZoomIn className="w-4 h-4 text-[#94a3b8]" />
             </motion.button>
             <motion.button
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 shadow-glass"
+              className="w-9 h-9 neo-btn-secondary flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))}
             >
-              <ZoomOut className="w-4 h-4" />
+              <ZoomOut className="w-4 h-4 text-[#94a3b8]" />
             </motion.button>
             <motion.button
-              className="w-9 h-9 glass rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-800 shadow-glass"
+              className="w-9 h-9 neo-btn-secondary flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setZoom(1)}
             >
-              <Maximize2 className="w-4 h-4" />
+              <Maximize2 className="w-4 h-4 text-[#94a3b8]" />
             </motion.button>
           </div>
 
+          {/* Graph Info Badge */}
+          <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-[#0a0e17]/80 rounded-lg border border-[#2a3548]">
+            <Layers className="w-4 h-4 text-[#00b4d8]" />
+            <span className="text-xs text-[#94a3b8]">缩放: {Math.round(zoom * 100)}%</span>
+          </div>
+
           {/* SVG Canvas */}
-          <div ref={containerRef} className="w-full h-full">
+          <div ref={containerRef} className="w-full h-full bg-[#0a0e17]">
             <svg
               width="100%"
               height="100%"
@@ -230,9 +234,33 @@ export default function GraphView() {
                   refY="3.5"
                   orient="auto"
                 >
-                  <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#3b4a61" />
                 </marker>
+                <marker
+                  id="arrowhead-active"
+                  markerWidth="10"
+                  markerHeight="7"
+                  refX="9"
+                  refY="3.5"
+                  orient="auto"
+                >
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#00b4d8" />
+                </marker>
+                {/* Glow filter */}
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
               </defs>
+
+              {/* Grid pattern */}
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2332" strokeWidth="0.5" />
+              </pattern>
+              <rect width="100%" height="100%" fill="url(#grid)" />
 
               {/* Edges */}
               <g>
@@ -251,10 +279,10 @@ export default function GraphView() {
                         y1={source.y}
                         x2={target.x}
                         y2={target.y}
-                        stroke={isHighlighted ? '#007AFF' : '#cbd5e1'}
+                        stroke={isHighlighted ? '#00b4d8' : '#2a3548'}
                         strokeWidth={isHighlighted ? 2 : 1}
-                        opacity={hoveredNode && !isHighlighted ? 0.2 : 1}
-                        markerEnd="url(#arrowhead)"
+                        opacity={hoveredNode && !isHighlighted ? 0.15 : 1}
+                        markerEnd={isHighlighted ? 'url(#arrowhead-active)' : 'url(#arrowhead)'}
                         style={{ transition: 'all 0.2s ease' }}
                       />
                       {isHighlighted && (
@@ -262,7 +290,7 @@ export default function GraphView() {
                           x={midX}
                           y={midY - 8}
                           textAnchor="middle"
-                          fill="#007AFF"
+                          fill="#00b4d8"
                           fontSize="11"
                           fontWeight="500"
                         >
@@ -282,30 +310,32 @@ export default function GraphView() {
                   const isHovered = hoveredNode === node.id
                   const isConnected = connectedToHovered.has(node.id)
                   const isDimmed = hoveredNode && !isHovered && !isConnected
+                  const isSelected = selectedNode?.id === node.id
 
                   return (
                     <g
                       key={node.id}
                       transform={`translate(${pos.x}, ${pos.y})`}
                       style={{ cursor: 'pointer', transition: 'opacity 0.2s ease' }}
-                      opacity={isDimmed ? 0.25 : 1}
+                      opacity={isDimmed ? 0.2 : 1}
                       onMouseEnter={() => setHoveredNode(node.id)}
                       onMouseLeave={() => setHoveredNode(null)}
                       onClick={() => setSelectedNode(node)}
+                      filter={isHovered || isSelected ? 'url(#glow)' : undefined}
                     >
                       <circle
-                        r={isHovered ? 26 : 22}
+                        r={isHovered ? 28 : 24}
                         fill={colors.bg}
-                        stroke={isHovered ? '#fff' : colors.border}
-                        strokeWidth={isHovered ? 3 : 2}
+                        stroke={isSelected ? '#00b4d8' : colors.border}
+                        strokeWidth={isSelected ? 3 : isHovered ? 2 : 1.5}
                         style={{ transition: 'all 0.2s ease' }}
                       />
                       <text
                         textAnchor="middle"
                         dy="0.35em"
-                        fill={colors.text}
+                        fill="#fff"
                         fontSize="10"
-                        fontWeight="500"
+                        fontWeight="600"
                       >
                         {node.label.length > 4 ? node.label.slice(0, 4) + '…' : node.label}
                       </text>
@@ -315,7 +345,7 @@ export default function GraphView() {
               </g>
             </svg>
           </div>
-        </GlassCard>
+        </NeoCard>
 
         {/* Detail Panel */}
         <AnimatePresence mode="wait">
@@ -328,16 +358,16 @@ export default function GraphView() {
               transition={{ duration: 0.25 }}
               className="shrink-0"
             >
-              <GlassCard className="h-full p-5 w-80" variant="heavy">
+              <NeoCard className="h-full p-5 w-80" variant="elevated">
                 <div className="flex items-start justify-between mb-4">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: nodeColors[selectedNode.type].bg }}
                   >
                     <Info className="w-5 h-5 text-white" />
                   </div>
                   <motion.button
-                    className="w-8 h-8 rounded-lg hover:bg-black/5 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                    className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setSelectedNode(null)}
@@ -346,24 +376,24 @@ export default function GraphView() {
                   </motion.button>
                 </div>
 
-                <h2 className="text-lg font-semibold text-gray-800 mb-1">
+                <h2 className="text-lg font-semibold text-[#f0f4f8] mb-2">
                   {selectedNode.label}
                 </h2>
                 <span
-                  className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium text-white mb-4"
+                  className="inline-block px-2.5 py-1 rounded-md text-xs font-medium text-white mb-4"
                   style={{ backgroundColor: nodeColors[selectedNode.type].bg }}
                 >
                   {typeLabels[selectedNode.type]}
                 </span>
 
-                <p className="text-sm text-gray-600 leading-relaxed mb-6">
+                <p className="text-sm text-[#94a3b8] leading-relaxed mb-6">
                   {selectedNode.description || '暂无描述信息'}
                 </p>
 
                 {/* Related nodes */}
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                    <Link2 className="w-4 h-4" />
+                  <h3 className="text-sm font-medium text-[#f0f4f8] mb-3 flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-[#00b4d8]" />
                     关联实体
                   </h3>
                   <div className="space-y-2 max-h-[280px] overflow-y-auto">
@@ -381,35 +411,35 @@ export default function GraphView() {
                         return (
                           <motion.div
                             key={edge.id}
-                            className="flex items-center gap-3 p-2.5 rounded-xl bg-black/[0.02] hover:bg-black/[0.04] cursor-pointer transition-colors"
+                            className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] hover:bg-[#111827] border border-[#2a3548] hover:border-[#3b4a61] cursor-pointer transition-all"
                             whileHover={{ x: 2 }}
                             onClick={() => setSelectedNode(relatedNode)}
                           >
                             <div
-                              className="w-6 h-6 rounded-lg flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center"
                               style={{
                                 backgroundColor: nodeColors[relatedNode.type].bg + '20',
                               }}
                             >
                               <div
-                                className="w-2.5 h-2.5 rounded-full"
+                                className="w-3 h-3 rounded-full"
                                 style={{
                                   backgroundColor: nodeColors[relatedNode.type].bg,
                                 }}
                               />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-700 truncate">
+                              <p className="text-sm font-medium text-[#f0f4f8] truncate">
                                 {relatedNode.label}
                               </p>
-                              <p className="text-xs text-gray-400">{edge.label}</p>
+                              <p className="text-xs text-[#64748b]">{edge.label}</p>
                             </div>
                           </motion.div>
                         )
                       })}
                   </div>
                 </div>
-              </GlassCard>
+              </NeoCard>
             </motion.div>
           ) : (
             <motion.div
@@ -419,13 +449,13 @@ export default function GraphView() {
               exit={{ opacity: 0 }}
               className="w-80 shrink-0"
             >
-              <GlassCard className="h-full p-5 flex flex-col items-center justify-center text-center" variant="default">
-                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
-                  <Info className="w-6 h-6 text-gray-400" />
+              <NeoCard className="h-full p-5 flex flex-col items-center justify-center text-center">
+                <div className="w-14 h-14 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
+                  <Info className="w-6 h-6 text-[#64748b]" />
                 </div>
-                <p className="text-gray-500 text-sm">点击图谱中的节点</p>
-                <p className="text-gray-400 text-sm">查看详细信息</p>
-              </GlassCard>
+                <p className="text-[#94a3b8] text-sm mb-1">点击图谱中的节点</p>
+                <p className="text-[#64748b] text-sm">查看详细信息</p>
+              </NeoCard>
             </motion.div>
           )}
         </AnimatePresence>

@@ -3,23 +3,23 @@ import type { ComponentProps, ReactNode } from 'react'
 
 type MotionDivProps = ComponentProps<typeof motion.div>
 
-interface GlassCardProps extends MotionDivProps {
-  variant?: 'default' | 'heavy'
+interface NeoCardProps extends MotionDivProps {
+  variant?: 'default' | 'elevated'
   hover?: boolean
   children: ReactNode
 }
 
-export default function GlassCard({
+export default function NeoCard({
   children,
   className = '',
   variant = 'default',
   hover = false,
   ...props
-}: GlassCardProps) {
+}: NeoCardProps) {
   return (
     <motion.div
-      className={`${variant === 'heavy' ? 'glass-heavy' : 'glass'} shadow-glass rounded-2xl ${className}`}
-      whileHover={hover ? { y: -2, scale: 1.005 } : undefined}
+      className={`${variant === 'elevated' ? 'neo-card-elevated' : 'neo-card'} ${className}`}
+      whileHover={hover ? { y: -2, borderColor: '#3b4a61' } : undefined}
       transition={{ duration: 0.2 }}
       {...props}
     >
