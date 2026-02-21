@@ -70,9 +70,9 @@ export default function SearchView() {
       : results.filter((r) => r.type === activeFilter)
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-3xl mx-auto px-4">
       {/* Header */}
-      <div className="text-center pt-4 pb-2">
+      <div className="text-center pt-8 pb-4">
         <motion.div
           className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[#007AFF] to-[#5AC8FA] mb-4 shadow-lg shadow-[#007AFF]/20"
           initial={{ scale: 0.8, opacity: 0 }}
