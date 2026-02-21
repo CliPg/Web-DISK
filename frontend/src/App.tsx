@@ -1,0 +1,21 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Layout from './components/layout/Layout'
+import GraphView from './pages/GraphView'
+import DocumentsView from './pages/DocumentsView'
+import SearchView from './pages/SearchView'
+import PipelineView from './pages/PipelineView'
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<GraphView />} />
+          <Route path="documents" element={<DocumentsView />} />
+          <Route path="search" element={<SearchView />} />
+          <Route path="pipeline" element={<PipelineView />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  )
+}
