@@ -36,13 +36,14 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-6 space-y-4">
+      <nav className="flex-1 px-2 py-6 space-y-5">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path
           return (
             <motion.button
               key={item.path}
               onClick={() => navigate(item.path)}
+              style={{ marginBottom: '4px' }}
               className={`w-full flex items-center gap-5 px-3 py-5 min-h-[44px] rounded-xl text-left transition-all duration-200 group ${
                 isActive
                   ? 'bg-[#00b4d8]/10 text-[#00b4d8] border border-[#00b4d8]/30'
