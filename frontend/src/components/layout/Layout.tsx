@@ -8,7 +8,7 @@ export default function Layout() {
       <Sidebar />
       {/* 主内容区域 */}
       <main className="flex-1 min-h-screen overflow-x-hidden">
-        <div className="p-6 h-full">
+        <div className="pr-8 py-6 h-full" style={{ paddingLeft: '12px' }}>
           <Outlet />
         </div>
       </main>

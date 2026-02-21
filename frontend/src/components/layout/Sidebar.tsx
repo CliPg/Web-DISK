@@ -65,26 +65,6 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Stats Section */}
-      <div className="px-2 py-6 border-t border-[#2a3548]">
-        <div className="neo-card p-5 space-y-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-[#64748b]">图谱状态</span>
-            <span className="w-2 h-2 rounded-full bg-[#00c853] animate-pulse" />
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <div className="text-2xl font-semibold text-[#f0f4f8]">15</div>
-              <div className="text-xs text-[#64748b] mt-1.5">实体数量</div>
-            </div>
-            <div>
-              <div className="text-2xl font-semibold text-[#f0f4f8]">18</div>
-              <div className="text-xs text-[#64748b] mt-1.5">关系数量</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Bottom Settings */}
       <div className="px-2 py-5 border-t border-[#2a3548]">
         <motion.button
