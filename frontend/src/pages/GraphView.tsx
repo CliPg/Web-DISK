@@ -484,12 +484,14 @@ export default function GraphView() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute top-full right-0 mt-2 w-full neo-card-elevated rounded-lg py-1.5 z-20 max-h-[300px] overflow-y-auto"
+                    className="absolute top-full right-0 mt-2 w-full neo-card-elevated rounded-lg z-20 max-h-[300px] overflow-y-auto"
+                    style={{ padding: '8px 0' }}
                   >
                     {graphs.map((graph) => (
                       <button
                         key={graph.id}
-                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-[#1a2332] transition-colors flex items-center gap-2 whitespace-nowrap"
+                        className="w-full text-left text-sm flex items-center gap-2 whitespace-nowrap rounded-lg transition-all hover:bg-[#232d3f]"
+                        style={{ padding: '12px 20px' }}
                         onClick={() => {
                           setSelectedGraphId(graph.id)
                           setGraphDropdownOpen(false)
