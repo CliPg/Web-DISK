@@ -101,6 +101,7 @@ export default function PipelineView() {
   const startTimeRef = useRef<Date | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const unsubscribeRef = useRef<(() => void) | null>(null)
+  const selectedDocIdRef = useRef<string | null>(null)
 
   // 格式化时间
   const formatTime = (seconds: number) => {
@@ -111,30 +112,48 @@ export default function PipelineView() {
 
   // 加载处理中的文档
   const fetchProcessingDocuments = useCallback(async () => {
+    // 防止重复调用
+    const callId = Date.now()
+    console.log(`[PipelineView] fetchProcessingDocuments called:`, { callId, currentRef: selectedDocIdRef.current })
+
     try {
       setIsLoading(true)
       const data = await documentsApi.list({ limit: 50 })
       const processingDocs = data.documents.filter(
         (d) => d.status === 'processing' || d.status === 'pending'
       )
+      console.log(`[PipelineView] Processing docs:`, processingDocs.length, processingDocs.map(d => ({ id: d.id, status: d.status })))
       setDocuments(processingDocs)
 
-      // 自动选择第一个处理中的文档
-      if (processingDocs.length > 0 && !selectedDocId) {
+      // 自动选择第一个处理中的文档（仅当没有选中文档时）
+      // 使用 ref 检查，避免闭包问题
+      if (processingDocs.length > 0 && !selectedDocIdRef.current) {
         const doc = processingDocs.find((d) => d.status === 'processing') || processingDocs[0]
         if (doc) {
-          await selectDocument(doc.id)
+          console.log(`[PipelineView] Auto-selecting doc:`, doc.id)
+          selectedDocIdRef.current = doc.id
+          setSelectedDocId(doc.id)
+          if (doc.task_id) {
+            await subscribeToTask(doc.task_id)
+          }
         }
+      } else {
+        console.log(`[PipelineView] Skipping auto-select:`, { docsLength: processingDocs.length, hasRef: !!selectedDocIdRef.current })
       }
     } catch (error) {
       console.error('Failed to fetch documents:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [selectedDocId])
+  }, []) // 空依赖数组，只在挂载时执行一次
 
   // 选择文档并订阅任务进度
-  const selectDocument = async (docId: string) => {
+  const selectDocument = useCallback(async (docId: string) => {
+    // 防止重复选择
+    if (selectedDocIdRef.current === docId) {
+      return
+    }
+
     // 清理之前的订阅
     if (unsubscribeRef.current) {
       unsubscribeRef.current()
@@ -146,12 +165,19 @@ export default function PipelineView() {
       timerRef.current = null
     }
 
+    selectedDocIdRef.current = docId
     setSelectedDocId(docId)
-    const doc = documents.find((d) => d.id === docId)
-    if (doc?.task_id) {
-      await subscribeToTask(doc.task_id)
+
+    // 重新获取文档以确保有最新的 task_id
+    try {
+      const docData = await documentsApi.get(docId)
+      if (docData.task_id) {
+        await subscribeToTask(docData.task_id)
+      }
+    } catch (error) {
+      console.error('Failed to get document:', error)
     }
-  }
+  }, [])
 
   // 订阅任务进度
   const subscribeToTask = async (taskId: string) => {
@@ -249,9 +275,10 @@ export default function PipelineView() {
   const handleStart = async (docId: string) => {
     try {
       const result = await documentsApi.startProcessing(docId)
+      // 选择文档并订阅任务
       await selectDocument(docId)
-      // 刷新文档列表
-      fetchProcessingDocuments()
+      // 刷新文档列表以获取最新状态
+      await fetchProcessingDocuments()
     } catch (error) {
       alert('开始处理失败: ' + (error instanceof Error ? error.message : '未知错误'))
     }
@@ -284,8 +311,13 @@ export default function PipelineView() {
         },
       ])
 
+      // 重置选中的文档
+      selectedDocIdRef.current = null
+      setSelectedDocId(null)
+      setCurrentTask(null)
+
       // 刷新文档列表
-      fetchProcessingDocuments()
+      await fetchProcessingDocuments()
     } catch (error) {
       alert('取消失败: ' + (error instanceof Error ? error.message : '未知错误'))
     }
