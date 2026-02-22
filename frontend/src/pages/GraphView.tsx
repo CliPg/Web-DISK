@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers, Download, RefreshCw, FileJson, Image as ImageIcon } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers, Download, RefreshCw, FileJson, Image as ImageIcon, ChevronDown, Network } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KGNode, KGEdge } from '../types'
-import { kgApi } from '../services/api'
+import type { KnowledgeGraph } from '../types'
+import { kgApi, graphsApi } from '../services/api'
 
 interface NodePosition {
   id: string
@@ -86,8 +87,50 @@ export default function GraphView() {
   const edgesRef = useRef<KGEdge[]>([])
   const dimensionsRef = useRef({ width: 800, height: 600 })
 
-  // Load knowledge graph data on mount
+  // 知识图谱选择相关状态
+  const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
+  const [selectedGraphId, setSelectedGraphId] = useState<string | null>(null)
+  const [graphDropdownOpen, setGraphDropdownOpen] = useState(false)
+
+  // 加载知识图谱列表
   useEffect(() => {
+    const loadGraphs = async () => {
+      try {
+        const data = await graphsApi.list()
+        setGraphs(data.graphs)
+        // 默认选中默认图谱
+        const defaultGraph = data.graphs.find((g) => g.is_default)
+        if (defaultGraph) {
+          setSelectedGraphId(defaultGraph.id)
+        } else if (data.graphs.length > 0) {
+          setSelectedGraphId(data.graphs[0].id)
+        }
+      } catch (error) {
+        console.error('Failed to load graphs:', error)
+      }
+    }
+    loadGraphs()
+  }, [])
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.graph-selector')) {
+        setGraphDropdownOpen(false)
+      }
+    }
+
+    if (graphDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [graphDropdownOpen])
+
+  // Load knowledge graph data when selected graph changes
+  useEffect(() => {
+    if (!selectedGraphId) return
+
     const loadGraphData = async () => {
       setIsLoading(true)
       setLoadError(null)
@@ -114,7 +157,7 @@ export default function GraphView() {
     }
 
     loadGraphData()
-  }, [])
+  }, [selectedGraphId])
 
   // Initialize positions
   useEffect(() => {
@@ -412,8 +455,63 @@ export default function GraphView() {
             {nodes.length} 个实体 · {edges.length} 个关系
           </p>
         </div>
+
         {/* Legend and Actions */}
         <div className="flex items-center gap-4">
+          {/* Graph Selector */}
+          {graphs.length > 0 && (
+            <div className="relative graph-selector">
+              <motion.button
+                className="flex items-center gap-2 px-4 py-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+                onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
+                    <Network className="w-3 h-3 text-[#00b4d8]" />
+                  </div>
+                  <span className="text-[#f0f4f8] truncate max-w-[120px]">
+                    {graphs.find((g) => g.id === selectedGraphId)?.name || '选择知识图谱'}
+                  </span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+              </motion.button>
+
+              <AnimatePresence>
+                {graphDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="absolute top-full right-0 mt-2 w-full neo-card-elevated rounded-lg py-1.5 z-20 max-h-[300px] overflow-y-auto"
+                  >
+                    {graphs.map((graph) => (
+                      <button
+                        key={graph.id}
+                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-[#1a2332] transition-colors flex items-center gap-2 whitespace-nowrap"
+                        onClick={() => {
+                          setSelectedGraphId(graph.id)
+                          setGraphDropdownOpen(false)
+                        }}
+                      >
+                        <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center shrink-0">
+                          <Network className="w-3 h-3 text-[#00b4d8]" />
+                        </div>
+                        <span className="text-[#f0f4f8] truncate">{graph.name}</span>
+                        {graph.is_default && (
+                          <span className="px-1.5 py-0.5 text-xs bg-[#00c853]/20 text-[#00c853] rounded shrink-0">默认</span>
+                        )}
+                        {selectedGraphId === graph.id && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-[#00c853] ml-auto shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
           {/* Export Buttons */}
           <div className="flex items-center gap-2">
             <motion.button
