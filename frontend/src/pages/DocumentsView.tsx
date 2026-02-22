@@ -415,7 +415,8 @@ export default function DocumentsView() {
         <button
           onClick={fetchDocuments}
           disabled={isLoading}
-          className="px-3 py-1.5 text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
+          className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
+          style={{ padding: '6px 10px 6px 14px' }}
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           刷新
@@ -439,7 +440,8 @@ export default function DocumentsView() {
             <span className="text-sm text-[#94a3b8] whitespace-nowrap">上传到:</span>
             <div className="relative">
               <motion.button
-                className="flex items-center gap-2 px-4 py-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+                className="flex items-center gap-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+                style={{ padding: '6px 10px' }}
                 onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
                 whileTap={{ scale: 0.98 }}
               >
@@ -460,12 +462,14 @@ export default function DocumentsView() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute top-full left-0 mt-2 w-full neo-card-elevated rounded-lg py-1.5 z-10"
+                    className="absolute top-full left-0 mt-2 w-full neo-card-elevated rounded-lg z-10"
+                    style={{ padding: '8px 8px' }}
                   >
                     {graphs.map((graph) => (
                       <button
                         key={graph.id}
-                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-[#1a2332] transition-colors flex items-center gap-2"
+                        className="w-full text-left text-sm flex items-center gap-2 whitespace-nowrap rounded-lg transition-all hover:bg-[#232d3f]"
+                        style={{ padding: '6px 10px' }}
                         onClick={() => {
                           setSelectedGraphId(graph.id)
                           setGraphDropdownOpen(false)
