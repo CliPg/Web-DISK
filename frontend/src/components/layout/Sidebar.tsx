@@ -66,17 +66,6 @@ export default function Sidebar() {
           )
         })}
       </nav>
-
-      {/* Bottom Settings */}
-      <div className="px-2 py-5 border-t border-[#2a3548]">
-        <motion.button
-          className="w-full flex items-center gap-5 px-3 py-4 rounded-xl text-[#94a3b8] hover:text-[#f0f4f8] hover:bg-[#1a2332] transition-colors duration-200"
-          whileTap={{ scale: 0.98 }}
-        >
-          <Settings className="w-5 h-5" strokeWidth={1.5} />
-          <span className="text-base font-medium">设置</span>
-        </motion.button>
-      </div>
     </aside>
   )
 }
