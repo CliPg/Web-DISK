@@ -201,7 +201,7 @@ export default function GraphsView() {
       <div className="grid grid-cols-4 gap-4">
         <NeoCard className="p-5" hover>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#00b4d8]/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#00b4d8]/10 flex items-center justify-center" style={{ marginLeft: '4px' }}>
               <Network className="w-5 h-5 text-[#00b4d8]" />
             </div>
             <div>
@@ -212,7 +212,7 @@ export default function GraphsView() {
         </NeoCard>
         <NeoCard className="p-5" hover>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center" style={{ marginLeft: '4px' }}>
               <GitBranch className="w-5 h-5 text-[#3b82f6]" />
             </div>
             <div>
@@ -225,7 +225,7 @@ export default function GraphsView() {
         </NeoCard>
         <NeoCard className="p-5" hover>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#00c853]/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#00c853]/10 flex items-center justify-center" style={{ marginLeft: '4px' }}>
               <FileText className="w-5 h-5 text-[#00c853]" />
             </div>
             <div>
@@ -238,7 +238,7 @@ export default function GraphsView() {
         </NeoCard>
         <NeoCard className="p-5" hover>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#a855f7]/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-[#a855f7]/10 flex items-center justify-center" style={{ marginLeft: '4px' }}>
               <Network className="w-5 h-5 text-[#a855f7]" />
             </div>
             <div>
