@@ -21,6 +21,10 @@
 
 **Web Disk Knowledge Graph** 是一个基于 DISK（Domain Incremental conStruction of Knowledge Graphs）模块的智能知识图谱构建系统。系统通过自然语言处理和机器学习技术，从非结构化的 PDF 文档中提取结构化知识，支持增量式知识图谱构建和语义合并。
 
+<p align="center">
+  <img src="./docs/imgs/show.png" width="600">
+</p>
+
 ### 核心价值
 
 - **自动化知识提取**：从 PDF 文档自动识别实体、关系和属性
@@ -77,8 +81,9 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/your-username/web-disk.git
+git clone https://github.com/CliPg/Web-DISK.git
 cd web-disk
+git clone https://github.com/CliPg/DISK.git
 ```
 
 ### 2. 安装依赖
