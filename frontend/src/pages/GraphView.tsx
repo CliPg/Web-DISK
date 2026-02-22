@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers, Download, RefreshCw } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KGNode, KGEdge } from '../types'
+import { kgApi } from '../services/api'
 
 interface NodePosition {
   id: string
@@ -28,7 +29,50 @@ const typeLabels: Record<KGNode['type'], string> = {
   model: '模型',
 }
 
+// 将后端实体类型映射到前端节点类型
+function mapNodeType(labels: string[]): KGNode['type'] {
+  const labelStr = labels.join(' ').toLowerCase()
+  if (labelStr.includes('technology') || labelStr.includes('技术')) return 'technology'
+  if (labelStr.includes('method') || labelStr.includes('方法')) return 'method'
+  if (labelStr.includes('application') || labelStr.includes('应用')) return 'application'
+  if (labelStr.includes('model') || labelStr.includes('模型')) return 'model'
+  return 'concept'
+}
+
+// 从 Neo4j 属性中提取节点名称
+function extractNodeName(properties: Record<string, unknown>, labels: string[]): string {
+  // 尝试从 properties 中获取 name 字段
+  if (typeof properties.name === 'string') return properties.name
+  if (typeof properties.label === 'string') return properties.label
+  if (typeof properties.title === 'string') return properties.title
+  // 使用第一个 label 作为后备
+  return labels[0] || 'Unknown'
+}
+
+// 转换后端实体数据为前端节点格式
+function transformEntities(entities: Array<{ id: string; labels: string[]; properties: Record<string, unknown> }>): KGNode[] {
+  return entities.map(entity => ({
+    id: entity.id,
+    label: extractNodeName(entity.properties, entity.labels),
+    type: mapNodeType(entity.labels),
+    description: typeof entity.properties.description === 'string' ? entity.properties.description : undefined,
+    properties: entity.properties as Record<string, string>,
+  }))
+}
+
+// 转换后端关系数据为前端边格式
+function transformRelations(relations: Array<{ start_id: string; end_id: string; type: string; properties: Record<string, unknown> }>): KGEdge[] {
+  return relations.map((rel, index) => ({
+    id: `edge-${rel.start_id}-${rel.end_id}-${index}`,
+    source: rel.start_id,
+    target: rel.end_id,
+    label: rel.type,
+  }))
+}
+
 export default function GraphView() {
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<KGNode[]>([])
   const [edges, setEdges] = useState<KGEdge[]>([])
@@ -38,6 +82,35 @@ export default function GraphView() {
   const [zoom, setZoom] = useState(1)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const animationRef = useRef<number | undefined>(undefined)
+
+  // Load knowledge graph data on mount
+  useEffect(() => {
+    const loadGraphData = async () => {
+      setIsLoading(true)
+      setLoadError(null)
+      try {
+        // 并行加载实体和关系
+        const [entitiesData, relationsData] = await Promise.all([
+          kgApi.getEntities(500, 0),
+          kgApi.getRelations(500, 0),
+        ])
+
+        // 转换数据格式
+        const transformedNodes = transformEntities(entitiesData.entities)
+        const transformedEdges = transformRelations(relationsData.relations)
+
+        setNodes(transformedNodes)
+        setEdges(transformedEdges)
+      } catch (error) {
+        console.error('Failed to load graph data:', error)
+        setLoadError('加载知识图谱数据失败')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadGraphData()
+  }, [])
 
   // Initialize positions
   useEffect(() => {
@@ -157,6 +230,29 @@ export default function GraphView() {
 
   const connectedToHovered = hoveredNode ? getConnectedNodes(hoveredNode) : new Set<string>()
 
+  // Refresh graph data
+  const handleRefresh = async () => {
+    setIsLoading(true)
+    setLoadError(null)
+    try {
+      const [entitiesData, relationsData] = await Promise.all([
+        kgApi.getEntities(500, 0),
+        kgApi.getRelations(500, 0),
+      ])
+
+      const transformedNodes = transformEntities(entitiesData.entities)
+      const transformedEdges = transformRelations(relationsData.relations)
+
+      setNodes(transformedNodes)
+      setEdges(transformedEdges)
+    } catch (error) {
+      console.error('Failed to refresh graph data:', error)
+      setLoadError('加载知识图谱数据失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="h-full flex flex-col gap-4">
       {/* Header */}
@@ -167,31 +263,77 @@ export default function GraphView() {
             {nodes.length} 个实体 · {edges.length} 个关系
           </p>
         </div>
-        {/* Legend */}
-        <div className="flex items-center gap-4 px-4 py-2 neo-card">
-          {Object.entries(nodeColors).map(([type, colors]) => (
-            <div key={type} className="flex items-center gap-2">
-              <div
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: colors.bg }}
-              />
-              <span className="text-xs text-[#94a3b8]">{typeLabels[type as KGNode['type']]}</span>
-            </div>
-          ))}
+        {/* Legend and Actions */}
+        <div className="flex items-center gap-4">
+          {/* Refresh Button */}
+          <motion.button
+            className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            刷新
+          </motion.button>
+          {/* Legend */}
+          <div className="flex items-center gap-4 px-4 py-2 neo-card">
+            {Object.entries(nodeColors).map(([type, colors]) => (
+              <div key={type} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: colors.bg }}
+                />
+                <span className="text-xs text-[#94a3b8]">{typeLabels[type as KGNode['type']]}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex gap-4 min-h-0">
-        {/* Graph Area */}
-        <NeoCard className="flex-1 relative overflow-hidden p-0" variant="elevated">
-          {/* Zoom Controls */}
-          <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <RefreshCw className="w-8 h-8 text-[#00b4d8] animate-spin mx-auto mb-3" />
+            <p className="text-[#94a3b8]">加载知识图谱中...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {loadError && !isLoading && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mx-auto mb-4 border border-[#2a3548]">
+              <Info className="w-8 h-8 text-[#64748b]" />
+            </div>
+            <p className="text-[#94a3b8] mb-2">{loadError}</p>
             <motion.button
-              className="w-9 h-9 neo-btn-secondary flex items-center justify-center"
+              className="px-4 py-2 neo-btn-primary rounded-lg inline-flex items-center gap-2 text-sm mt-4"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setZoom((z) => Math.min(2, z + 0.2))}
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="w-4 h-4" />
+              重试
+            </motion.button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      {!isLoading && !loadError && (
+        <div className="flex-1 flex gap-4 min-h-0">
+          {/* Graph Area */}
+          <NeoCard className="flex-1 relative overflow-hidden p-0" variant="elevated">
+            {/* Zoom Controls */}
+            <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+              <motion.button
+                className="w-9 h-9 neo-btn-secondary flex items-center justify-center"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setZoom((z) => Math.min(2, z + 0.2))}
             >
               <ZoomIn className="w-4 h-4 text-[#94a3b8]" />
             </motion.button>
@@ -460,7 +602,8 @@ export default function GraphView() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

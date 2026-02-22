@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Play,
-  Pause,
-  RotateCcw,
+  StopCircle,
   CheckCircle2,
   Circle,
   Loader2,
@@ -13,9 +12,20 @@ import {
   ChevronUp,
   Terminal,
   FileText,
+  X,
+  Network,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
-import type { PipelineRun, LogEntry } from '../types'
+import { documentsApi, tasksApi } from '../services/api'
+import { useNavigate } from 'react-router-dom'
+
+// 定义处理阶段配置
+const PIPELINE_STAGES = [
+  { id: 'distill', name: 'PDF蒸馏', description: '从PDF文档中提取文本内容' },
+  { id: 'extract', name: '知识抽取', description: '抽取实体和关系' },
+  { id: 'merge', name: '图谱合并', description: '增量合并到知识图谱' },
+  { id: 'persist', name: '持久化', description: '保存到Neo4j数据库' },
+]
 
 const stageStatusConfig = {
   pending: {
@@ -48,49 +58,256 @@ const stageStatusConfig = {
   },
 }
 
-const logLevelConfig = {
-  info: { color: '#00b4d8', bg: 'bg-[#00b4d8]/10' },
-  warning: { color: '#ff9800', bg: 'bg-[#ff9800]/10' },
-  error: { color: '#f44336', bg: 'bg-[#f44336]/10' },
-  success: { color: '#00c853', bg: 'bg-[#00c853]/10' },
+// 后端进度到前端阶段的映射
+function mapProgressToStages(progress: number, currentStep: string) {
+  const stages = PIPELINE_STAGES.map((stage) => ({
+    ...stage,
+    status: 'pending' as const,
+    progress: 0,
+  }))
+
+  // 根据进度确定阶段状态
+  if (progress >= 100) {
+    stages.forEach((s) => s.status = 'completed')
+  } else if (progress > 0) {
+    // 计算当前阶段
+    const stageIndex = Math.floor(progress / 25) // 0-3
+    stages.forEach((s, i) => {
+      if (i < stageIndex) {
+        s.status = 'completed'
+        s.progress = 100
+      } else if (i === stageIndex) {
+        s.status = 'running'
+        s.progress = Math.round((progress % 25) * 4)
+      }
+    })
+  }
+
+  return stages
 }
 
 export default function PipelineView() {
-  const [pipeline, setPipeline] = useState<PipelineRun | null>(null)
-  const [logs, setLogs] = useState<LogEntry[]>([])
+  const navigate = useNavigate()
+  const [documents, setDocuments] = useState<any[]>([])
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(null)
+  const [currentTask, setCurrentTask] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [logs, setLogs] = useState<Array<{ id: string; timestamp: string; level: string; message: string }>>([])
   const [expandedStage, setExpandedStage] = useState<string | null>(null)
-  const [isPaused, setIsPaused] = useState(false)
-  const [showAllLogs, setShowAllLogs] = useState(false)
+  const [entitiesCount, setEntitiesCount] = useState(0)
+  const [relationsCount, setRelationsCount] = useState(0)
 
-  // Simulate progress
-  useEffect(() => {
-    if (!pipeline || isPaused || pipeline.status !== 'running') return
+  const startTimeRef = useRef<Date | null>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const unsubscribeRef = useRef<(() => void) | null>(null)
 
-    const interval = setInterval(() => {
-      setPipeline((prev) => {
-        if (!prev) return null
-        const stages = prev.stages.map((stage) => {
-          if (stage.status === 'running' && stage.progress < 100) {
-            const newProgress = Math.min(100, stage.progress + Math.random() * 3)
-            return { ...stage, progress: Math.round(newProgress) }
-          }
-          return stage
-        })
+  // 格式化时间
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
-        const overallProgress = stages.reduce((sum, s) => sum + s.progress / stages.length, 0)
+  // 加载处理中的文档
+  const fetchProcessingDocuments = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const data = await documentsApi.list({ limit: 50 })
+      const processingDocs = data.documents.filter(
+        (d) => d.status === 'processing' || d.status === 'pending'
+      )
+      setDocuments(processingDocs)
 
-        return {
-          ...prev,
-          stages,
-          overallProgress: Math.round(overallProgress),
+      // 自动选择第一个处理中的文档
+      if (processingDocs.length > 0 && !selectedDocId) {
+        const doc = processingDocs.find((d) => d.status === 'processing') || processingDocs[0]
+        if (doc) {
+          await selectDocument(doc.id)
         }
-      })
-    }, 500)
+      }
+    } catch (error) {
+      console.error('Failed to fetch documents:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [selectedDocId])
 
-    return () => clearInterval(interval)
-  }, [isPaused, pipeline?.status])
+  // 选择文档并订阅任务进度
+  const selectDocument = async (docId: string) => {
+    // 清理之前的订阅
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current()
+      unsubscribeRef.current = null
+    }
 
-  const completedStages = pipeline?.stages.filter((s) => s.status === 'completed').length ?? 0
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+
+    setSelectedDocId(docId)
+    const doc = documents.find((d) => d.id === docId)
+    if (doc?.task_id) {
+      await subscribeToTask(doc.task_id)
+    }
+  }
+
+  // 订阅任务进度
+  const subscribeToTask = async (taskId: string) => {
+    try {
+      // 先获取当前任务状态
+      const task = await tasksApi.get(taskId)
+      setCurrentTask(task)
+
+      // 设置开始时间
+      if (task.status === 'processing' || task.status === 'pending') {
+        startTimeRef.current = new Date(task.created_at)
+        // 启动计时器
+        timerRef.current = setInterval(() => {
+          if (startTimeRef.current) {
+            setElapsedTime(Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000))
+          }
+        }, 1000)
+      }
+
+      // 添加初始日志
+      setLogs([{
+        id: Date.now().toString(),
+        timestamp: new Date().toLocaleTimeString(),
+        level: 'info',
+        message: `任务状态: ${task.message}`,
+      }])
+
+      // 订阅SSE进度
+      const unsubscribe = tasksApi.subscribeProgress(
+        taskId,
+        (data) => {
+          // 更新任务状态
+          setCurrentTask({
+            ...data,
+            progress: Math.round(data.progress * 100),
+          })
+
+          // 更新实体和关系计数
+          if (data.entities_count !== undefined) {
+            setEntitiesCount(data.entities_count)
+          }
+          if (data.relations_count !== undefined) {
+            setRelationsCount(data.relations_count)
+          }
+
+          // 添加日志
+          setLogs((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              timestamp: new Date().toLocaleTimeString(),
+              level: 'info',
+              message: data.message || data.current_step,
+            },
+          ].slice(-50)) // 保留最近50条
+        },
+        (status) => {
+          // 任务完成
+          if (timerRef.current) {
+            clearInterval(timerRef.current)
+          }
+          setLogs((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              timestamp: new Date().toLocaleTimeString(),
+              level: status === 'completed' ? 'success' : 'error',
+              message: status === 'completed' ? '知识图谱构建完成！' : '处理失败',
+            },
+          ])
+          // 刷新文档列表
+          fetchProcessingDocuments()
+        },
+        (error) => {
+          setLogs((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              timestamp: new Date().toLocaleTimeString(),
+              level: 'error',
+              message: error,
+            },
+          ])
+        }
+      )
+
+      unsubscribeRef.current = unsubscribe
+    } catch (error) {
+      console.error('Failed to subscribe to task:', error)
+    }
+  }
+
+  // 开始处理
+  const handleStart = async (docId: string) => {
+    try {
+      const result = await documentsApi.startProcessing(docId)
+      await selectDocument(docId)
+      // 刷新文档列表
+      fetchProcessingDocuments()
+    } catch (error) {
+      alert('开始处理失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  // 取消处理
+  const handleCancel = async () => {
+    if (!currentTask || !selectedDocId) return
+
+    try {
+      await tasksApi.cancel(currentTask.id)
+
+      // 清理
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current()
+        unsubscribeRef.current = null
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: Date.now().toString(),
+          timestamp: new Date().toLocaleTimeString(),
+          level: 'warning',
+          message: '任务已取消',
+        },
+      ])
+
+      // 刷新文档列表
+      fetchProcessingDocuments()
+    } catch (error) {
+      alert('取消失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  // 初始加载
+  useEffect(() => {
+    fetchProcessingDocuments()
+
+    return () => {
+      if (unsubscribeRef.current) unsubscribeRef.current()
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [])
+
+  // 构建阶段数据
+  const stages = currentTask
+    ? mapProgressToStages(currentTask.progress, currentTask.current_step)
+    : PIPELINE_STAGES.map((s) => ({ ...s, status: 'pending' as const, progress: 0 }))
+
+  const overallProgress = currentTask?.progress || 0
+  const completedStages = stages.filter((s) => s.status === 'completed').length
+  const currentDoc = documents.find((d) => d.id === selectedDocId)
 
   return (
     <div className="h-full flex flex-col gap-6">
@@ -101,28 +318,15 @@ export default function PipelineView() {
           <p className="text-[#64748b] text-sm mt-0.5">实时追踪知识抽取进度</p>
         </div>
         <div className="flex items-center gap-2">
-          <motion.button
-            className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-              isPaused ? 'neo-btn-primary' : 'neo-btn-secondary'
-            }`}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsPaused(!isPaused)}
-          >
-            {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4 text-[#94a3b8]" />}
-          </motion.button>
-          <motion.button
-            className="w-9 h-9 neo-btn-secondary rounded-lg flex items-center justify-center"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <RotateCcw className="w-4 h-4 text-[#94a3b8]" />
-          </motion.button>
+          {currentDoc && (
+            <span className="text-sm text-[#94a3b8]">{currentDoc.original_filename}</span>
+          )}
+          <div className="text-sm text-[#00b4d8] font-mono">{formatTime(elapsedTime)}</div>
         </div>
       </div>
 
       {/* Current Task Card */}
-      {pipeline ? (
+      {currentDoc ? (
         <NeoCard className="p-5" variant="elevated">
           <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
             <div className="flex items-center gap-4">
@@ -130,18 +334,27 @@ export default function PipelineView() {
                 <FileText className="w-6 h-6 text-[#00b4d8]" />
               </div>
               <div>
-                <h2 className="font-semibold text-[#f0f4f8]">{pipeline.documentName}</h2>
+                <h2 className="font-semibold text-[#f0f4f8]">{currentDoc.original_filename}</h2>
                 <div className="flex items-center gap-2 mt-1">
                   <Clock className="w-4 h-4 text-[#64748b]" />
-                  <span className="text-sm text-[#64748b]">开始于 {pipeline.startTime}</span>
+                  <span className="text-sm text-[#64748b]">
+                    {currentTask?.message || '准备处理...'}
+                  </span>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-[#00b4d8]">{pipeline.overallProgress}%</div>
+              <div className="text-3xl font-bold text-[#00b4d8]">{overallProgress}%</div>
               <div className="text-sm text-[#64748b]">
-                {completedStages}/{pipeline.stages.length} 阶段完成
+                {completedStages}/{stages.length} 阶段完成
               </div>
+              {/* 实时统计 */}
+              {(entitiesCount > 0 || relationsCount > 0) && (
+                <div className="flex items-center gap-2 mt-2 text-sm">
+                  <Network className="w-3.5 h-3.5 text-[#00c853]" />
+                  <span className="text-[#94a3b8]">{entitiesCount} 实体 · {relationsCount} 关系</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -150,7 +363,7 @@ export default function PipelineView() {
             <motion.div
               className="neo-progress-bar"
               initial={{ width: 0 }}
-              animate={{ width: `${pipeline.overallProgress}%` }}
+              animate={{ width: `${overallProgress}%` }}
               transition={{ duration: 0.3 }}
             />
           </div>
@@ -161,7 +374,9 @@ export default function PipelineView() {
             <FileText className="w-6 h-6 text-[#64748b]" />
           </div>
           <p className="text-[#94a3b8]">暂无运行中的流程</p>
-          <p className="text-sm text-[#64748b] mt-1">上传文档后，处理流程将在此处显示</p>
+          <p className="text-sm text-[#64748b] mt-1">
+            {documents.length > 0 ? '选择一个待处理的文档开始构建' : '上传文档后，处理流程将在此处显示'}
+          </p>
         </NeoCard>
       )}
 
@@ -170,7 +385,7 @@ export default function PipelineView() {
         {/* Pipeline Stages */}
         <div className="space-y-3 overflow-y-auto">
           <h3 className="text-sm font-medium text-[#64748b] mb-2">处理阶段</h3>
-          {pipeline?.stages.map((stage, index) => {
+          {stages.map((stage, index) => {
             const config = stageStatusConfig[stage.status]
             const StatusIcon = config.icon
             const isExpanded = expandedStage === stage.id
@@ -220,8 +435,8 @@ export default function PipelineView() {
                       {stage.status === 'running' && (
                         <span className="text-[#00b4d8] font-medium">{stage.progress}%</span>
                       )}
-                      {stage.status === 'completed' && stage.endTime && (
-                        <span className="text-sm text-[#64748b]">{stage.endTime}</span>
+                      {stage.status === 'completed' && (
+                        <span className="text-sm text-[#00c853]">已完成</span>
                       )}
                       {stage.status === 'pending' && (
                         <span className="text-sm text-[#64748b]">等待中</span>
@@ -265,22 +480,22 @@ export default function PipelineView() {
                                 {config.text}
                               </p>
                             </div>
-                            {stage.startTime && (
+                            {startTimeRef.current && (
                               <div>
-                                <p className="text-xs text-[#64748b] mb-1">开始时间</p>
-                                <p className="text-sm text-[#94a3b8]">{stage.startTime}</p>
+                                <p className="text-xs text-[#64748b] mb-1">已用时间</p>
+                                <p className="text-sm text-[#94a3b8]">{formatTime(elapsedTime)}</p>
                               </div>
                             )}
-                            {stage.endTime && (
+                            {stage.status === 'completed' && (
                               <div>
-                                <p className="text-xs text-[#64748b] mb-1">结束时间</p>
-                                <p className="text-sm text-[#94a3b8]">{stage.endTime}</p>
+                                <p className="text-xs text-[#64748b] mb-1">状态</p>
+                                <p className="text-sm text-[#00c853]">已完成</p>
                               </div>
                             )}
                           </div>
-                          {stage.details && (
+                          {currentTask?.current_step && (
                             <div className="p-3 rounded-lg bg-[#111827] border border-[#2a3548]">
-                              <p className="text-sm text-[#94a3b8]">{stage.details}</p>
+                              <p className="text-sm text-[#94a3b8]">{currentTask.current_step}</p>
                             </div>
                           )}
                         </div>
@@ -301,24 +516,21 @@ export default function PipelineView() {
                 <Terminal className="w-5 h-5 text-[#00b4d8]" />
                 <h3 className="font-medium text-[#f0f4f8]">活动日志</h3>
               </div>
-              {logs.length > 6 && (
-                <motion.button
-                  className="text-sm text-[#00b4d8] flex items-center gap-1"
-                  whileHover={{ scale: 1.02 }}
-                  onClick={() => setShowAllLogs(!showAllLogs)}
+              {logs.length > 0 && (
+                <button
+                  className="text-sm text-[#f44336] hover:text-[#f44336]/80 flex items-center gap-1"
+                  onClick={() => setLogs([])}
                 >
-                  {showAllLogs ? '收起' : '查看全部'}
-                  {showAllLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </motion.button>
+                  <X className="w-4 h-4" />
+                  清空
+                </button>
               )}
             </div>
 
             <div className="space-y-2 flex-1 overflow-y-auto">
               {logs.length > 0 ? (
                 <AnimatePresence>
-                  {(showAllLogs ? logs : logs.slice(0, 6)).map((log, index) => {
-                  const levelConfig = logLevelConfig[log.level]
-                  return (
+                  {logs.map((log, index) => (
                     <motion.div
                       key={log.id}
                       initial={{ opacity: 0, x: -20 }}
@@ -329,15 +541,19 @@ export default function PipelineView() {
                     >
                       <span className="text-xs text-[#64748b] font-mono w-14 shrink-0">{log.timestamp}</span>
                       <div
-                        className={`px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${levelConfig.bg}`}
-                        style={{ color: levelConfig.color }}
+                        className={`px-1.5 py-0.5 rounded text-xs font-medium shrink-0 ${
+                          log.level === 'info' ? 'bg-[#00b4d8]/10 text-[#00b4d8]' :
+                          log.level === 'success' ? 'bg-[#00c853]/10 text-[#00c853]' :
+                          log.level === 'warning' ? 'bg-[#ff9800]/10 text-[#ff9800]' :
+                          log.level === 'error' ? 'bg-[#f44336]/10 text-[#f44336]' :
+                          'bg-[#64748b]/10 text-[#64748b]'
+                        }`}
                       >
                         {log.level.toUpperCase().slice(0, 4)}
                       </div>
                       <p className="text-sm text-[#94a3b8] flex-1 min-w-0">{log.message}</p>
                     </motion.div>
-                  )
-                  })}
+                  ))}
                 </AnimatePresence>
               ) : (
                 <div className="flex items-center justify-center h-full py-8">
@@ -348,6 +564,55 @@ export default function PipelineView() {
           </NeoCard>
         </div>
       </div>
+
+      {/* Documents Selector */}
+      {documents.length > 0 && !selectedDocId && (
+        <NeoCard className="p-4" variant="elevated">
+          <p className="text-sm text-[#64748b] mb-3">选择要处理的文档：</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {documents.map((doc) => (
+              <motion.button
+                key={doc.id}
+                className="p-3 rounded-lg bg-[#1a2332] hover:bg-[#2a3548] border border-[#2a3548] text-left transition-colors"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => handleStart(doc.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[#f0f4f8] truncate">{doc.original_filename}</span>
+                  <Play className="w-4 h-4 text-[#00c853] shrink-0" />
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </NeoCard>
+      )}
+
+      {/* Cancel Button for Running Task */}
+      {currentTask?.status === 'processing' && (
+        <motion.button
+          className="fixed bottom-6 right-6 px-4 py-2 neo-btn-secondary rounded-lg flex items-center gap-2 shadow-lg"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleCancel}
+        >
+          <StopCircle className="w-4 h-4 text-[#f44336]" />
+          取消构建
+        </motion.button>
+      )}
+
+      {/* View Graph Button for Completed Task */}
+      {currentTask?.status === 'completed' && (
+        <motion.button
+          className="fixed bottom-6 right-6 px-4 py-2 neo-btn-primary rounded-lg flex items-center gap-2 shadow-lg"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate('/graph')}
+        >
+          <Network className="w-4 h-4" />
+          查看知识图谱
+        </motion.button>
+      )}
     </div>
   )
 }

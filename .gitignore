@@ -1,0 +1,6 @@
+# data
+uploads/
+data/
+
+# env
+.env

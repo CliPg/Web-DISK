@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Upload,
@@ -13,9 +13,12 @@ import {
   Eye,
   X,
   FolderOpen,
+  Play,
+  StopCircle,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KGDocument } from '../types'
+import { documentsApi, tasksApi } from '../services/api'
 
 const statusConfig = {
   pending: {
@@ -59,13 +62,116 @@ const fileTypeConfig: Record<string, { icon: string; color: string; bg: string }
   md: { icon: '📋', color: '#a855f7', bg: 'bg-[#a855f7]/10' },
 }
 
+// 后端状态到前端状态的映射
+const mapBackendStatus = (status: string): KGDocument['status'] => {
+  switch (status) {
+    case 'pending':
+    case 'uploading':
+      return 'pending'
+    case 'processing':
+      return 'processing'
+    case 'completed':
+      return 'completed'
+    case 'failed':
+      return 'error'
+    default:
+      return 'pending'
+  }
+}
+
 export default function DocumentsView() {
   const [documents, setDocuments] = useState<KGDocument[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<KGDocument | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<string>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 存储任务取消订阅的函数
+  const unsubscribeRefs = useRef<Map<string, () => void>>(new Map())
+
+  // 加载文档列表
+  const fetchDocuments = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const data = await documentsApi.list({ limit: 100 })
+
+      const docs: KGDocument[] = data.documents.map((doc) => ({
+        id: doc.id,
+        name: doc.original_filename,
+        fileType: doc.filename.split('.').pop() as KGDocument['fileType'] || 'pdf',
+        size: `${(doc.file_size / 1024 / 1024).toFixed(1)} MB`,
+        pages: 0, // 后端暂未提供页数
+        status: mapBackendStatus(doc.status),
+        progress: 0,
+        uploadedAt: new Date(doc.created_at).toISOString().split('T')[0],
+        taskId: doc.task_id,
+        errorMessage: doc.error_message,
+        filePath: doc.file_path,
+      }))
+
+      setDocuments(docs)
+
+      // 为处理中的文档订阅进度更新
+      docs.forEach((doc) => {
+        if (doc.taskId && doc.status === 'processing') {
+          subscribeToTaskProgress(doc.taskId, doc.id)
+        }
+      })
+    } catch (error) {
+      console.error('Failed to fetch documents:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // 订阅任务进度
+  const subscribeToTaskProgress = (taskId: string, docId: string) => {
+    // 如果已有订阅，先取消
+    const existingUnsubscribe = unsubscribeRefs.current.get(docId)
+    if (existingUnsubscribe) {
+      existingUnsubscribe()
+    }
+
+    const unsubscribe = tasksApi.subscribeProgress(
+      taskId,
+      (data) => {
+        setDocuments((prev) =>
+          prev.map((d) =>
+            d.id === docId
+              ? {
+                  ...d,
+                  status: mapBackendStatus(data.status),
+                  progress: Math.round(data.progress * 100),
+                }
+              : d
+          )
+        )
+      },
+      (status) => {
+        // 任务完成，刷新文档列表
+        fetchDocuments()
+      },
+      (error) => {
+        console.error('Task progress error:', error)
+      }
+    )
+
+    unsubscribeRefs.current.set(docId, unsubscribe)
+  }
+
+  // 初始加载文档列表
+  useEffect(() => {
+    fetchDocuments()
+
+    // 清理函数：取消所有订阅
+    return () => {
+      unsubscribeRefs.current.forEach((unsubscribe) => unsubscribe())
+      unsubscribeRefs.current.clear()
+    }
+  }, [fetchDocuments])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -76,54 +182,168 @@ export default function DocumentsView() {
     setIsDragging(false)
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     const files = Array.from(e.dataTransfer.files)
-    files.forEach((file) => {
-      const newDoc: KGDocument = {
-        id: `d${Date.now()}-${Math.random()}`,
-        name: file.name,
-        fileType: file.name.split('.').pop() as KGDocument['fileType'],
-        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        pages: Math.floor(Math.random() * 100) + 10,
-        status: 'pending',
-        progress: 0,
-        uploadedAt: new Date().toISOString().split('T')[0],
-      }
-      setDocuments((prev) => [newDoc, ...prev])
-    })
+
+    for (const file of files) {
+      await uploadFile(file)
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setDocuments((prev) => prev.filter((d) => d.id !== id))
-    setMenuOpen(null)
-  }
-
-  const handleRetry = (id: string) => {
-    setDocuments((prev) =>
-      prev.map((d) =>
-        d.id === id ? { ...d, status: 'pending' as const, progress: 0 } : d
-      )
-    )
-    setMenuOpen(null)
-  }
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    files.forEach((file) => {
-      const newDoc: KGDocument = {
-        id: `d${Date.now()}-${Math.random()}`,
-        name: file.name,
-        fileType: file.name.split('.').pop() as KGDocument['fileType'],
-        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        pages: Math.floor(Math.random() * 100) + 10,
-        status: 'pending',
-        progress: 0,
-        uploadedAt: new Date().toISOString().split('T')[0],
+    // 重置input以允许再次选择相同文件
+    e.target.value = ''
+
+    for (const file of files) {
+      await uploadFile(file)
+    }
+  }
+
+  const uploadFile = async (file: File) => {
+    // 检查文件类型
+    const validExtensions = ['pdf', 'docx', 'txt', 'md']
+    const fileExt = file.name.split('.').pop()?.toLowerCase()
+    if (!validExtensions.includes(fileExt || '')) {
+      alert('不支持的文件类型')
+      return
+    }
+
+    // 创建临时文档显示上传中状态
+    const tempId = `temp-${Date.now()}-${Math.random()}`
+    const tempDoc: KGDocument = {
+      id: tempId,
+      name: file.name,
+      fileType: fileExt as KGDocument['fileType'] || 'pdf',
+      size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
+      pages: 0,
+      status: 'pending',
+      progress: 0,
+      uploadedAt: new Date().toISOString().split('T')[0],
+    }
+
+    setDocuments((prev) => [tempDoc, ...prev])
+    setIsUploading(true)
+
+    try {
+      // 调用上传API
+      const result = await documentsApi.upload(file)
+
+      // 上传成功，更新文档信息并订阅任务进度
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === tempId
+            ? {
+                ...d,
+                id: result.document_id,
+                taskId: result.task_id,
+                status: mapBackendStatus(result.status),
+              }
+            : d
+        )
+      )
+
+      // 订阅任务进度
+      subscribeToTaskProgress(result.task_id, result.document_id)
+    } catch (error) {
+      console.error('Upload failed:', error)
+      // 上传失败，显示错误状态
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === tempId
+            ? { ...d, status: 'error', errorMessage: error instanceof Error ? error.message : '上传失败' }
+            : d
+        )
+      )
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await documentsApi.delete(id)
+
+      // 取消该文档的任务订阅
+      const unsubscribe = unsubscribeRefs.current.get(id)
+      if (unsubscribe) {
+        unsubscribe()
+        unsubscribeRefs.current.delete(id)
       }
-      setDocuments((prev) => [newDoc, ...prev])
-    })
+
+      // 从列表中移除
+      setDocuments((prev) => prev.filter((d) => d.id !== id))
+      setMenuOpen(null)
+    } catch (error) {
+      console.error('Delete failed:', error)
+      alert('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  const handleRetry = async (id: string) => {
+    // 重新处理功能 - 开始构建
+    await handleStartProcessing(id)
+    setMenuOpen(null)
+  }
+
+  const handleStartProcessing = async (id: string) => {
+    try {
+      const result = await documentsApi.startProcessing(id)
+
+      // 更新文档状态
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === id
+            ? { ...d, status: 'processing', progress: 0, taskId: result.task_id }
+            : d
+        )
+      )
+
+      // 订阅任务进度
+      subscribeToTaskProgress(result.task_id, id)
+
+      setMenuOpen(null)
+    } catch (error) {
+      console.error('Start processing failed:', error)
+      alert('开始处理失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    }
+  }
+
+  const handleCancelProcessing = async (id: string) => {
+    if (!confirm('确定要取消处理吗？')) return
+
+    try {
+      if (!id) return
+
+      // 取消任务订阅
+      const unsubscribe = unsubscribeRefs.current.get(id)
+      if (unsubscribe) {
+        unsubscribe()
+        unsubscribeRefs.current.delete(id)
+      }
+
+      // 调用取消API
+      const doc = documents.find((d) => d.id === id)
+      if (doc?.taskId) {
+        await tasksApi.cancel(doc.taskId)
+      }
+
+      // 更新文档状态
+      setDocuments((prev) =>
+        prev.map((d) =>
+          d.id === id
+            ? { ...d, status: 'pending', progress: 0 }
+            : d
+        )
+      )
+
+      setMenuOpen(null)
+    } catch (error) {
+      console.error('Cancel failed:', error)
+      alert('取消失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    }
   }
 
   const stats = [
@@ -133,14 +353,14 @@ export default function DocumentsView() {
     { key: 'pending', label: '待处理', value: documents.filter((d) => d.status === 'pending').length, color: '#64748b' },
   ]
 
-  const filteredDocuments = activeFilter === 'all' 
-    ? documents 
+  const filteredDocuments = activeFilter === 'all'
+    ? documents
     : documents.filter((d) => d.status === activeFilter)
 
   return (
     <div className="h-full flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start">
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-[#f0f4f8]">文档管理</h1>
           <p className="text-[#64748b] text-sm mt-0.5">上传和管理您的知识文档</p>
@@ -153,6 +373,14 @@ export default function DocumentsView() {
           accept=".pdf,.docx,.txt,.md"
           onChange={handleFileSelect}
         />
+        <button
+          onClick={fetchDocuments}
+          disabled={isLoading}
+          className="px-3 py-1.5 text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          刷新
+        </button>
       </div>
 
       {/* Upload Area */}
@@ -161,7 +389,7 @@ export default function DocumentsView() {
           isDragging
             ? 'border-[#00b4d8] bg-[#00b4d8]/5'
             : 'border-[#2a3548] hover:border-[#3b4a61]'
-        }`}
+        } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -182,8 +410,9 @@ export default function DocumentsView() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
           >
-            或点击选择文件
+            {isUploading ? '上传中...' : '或点击选择文件'}
           </motion.button>
         </div>
       </NeoCard>
@@ -219,7 +448,11 @@ export default function DocumentsView() {
 
       {/* Document List */}
       <NeoCard className="flex-1 overflow-hidden" variant="elevated">
-        {filteredDocuments.length > 0 ? (
+        {isLoading ? (
+          <div className="h-full flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 text-[#64748b] animate-spin" />
+          </div>
+        ) : filteredDocuments.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
             {filteredDocuments.map((doc, index) => {
               const status = statusConfig[doc.status]
@@ -242,27 +475,57 @@ export default function DocumentsView() {
                       <h3 className="font-medium text-[#f0f4f8] truncate mb-0.5">{doc.name}</h3>
                       <div className="flex items-center gap-2 text-xs text-[#64748b]">
                         <span>{doc.size}</span>
-                        <span>·</span>
-                        <span>{doc.pages} 页</span>
+                        {doc.pages > 0 && (
+                          <>
+                            <span>·</span>
+                            <span>{doc.pages} 页</span>
+                          </>
+                        )}
                         <span>·</span>
                         <span>{doc.uploadedAt}</span>
                       </div>
                     </div>
 
                     {/* Status */}
-                    <div className="flex items-center gap-4 shrink-0">
-                      {/* Progress or Status Badge */}
-                      {doc.status === 'processing' ? (
-                        <div className="flex items-center gap-2 w-28">
-                          <div className="flex-1 h-1.5 neo-progress overflow-hidden">
-                            <div
-                              className="neo-progress-bar transition-all duration-300"
-                              style={{ width: `${doc.progress}%` }}
-                            />
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* Start/Cancel Button - for pending or processing documents */}
+                      {(doc.status === 'pending' || doc.status === 'error') && (
+                        <motion.button
+                          className="w-8 h-8 rounded-lg bg-[#00c853]/20 hover:bg-[#00c853]/30 flex items-center justify-center text-[#00c853] transition-all"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleStartProcessing(doc.id)}
+                          title="开始构建"
+                        >
+                          <Play className="w-4 h-4" />
+                        </motion.button>
+                      )}
+
+                      {doc.status === 'processing' && (
+                        <>
+                          <div className="flex items-center gap-2 w-28">
+                            <div className="flex-1 h-1.5 neo-progress overflow-hidden">
+                              <div
+                                className="neo-progress-bar transition-all duration-300"
+                                style={{ width: `${doc.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-[#00b4d8] font-medium w-9 text-right">{doc.progress}%</span>
                           </div>
-                          <span className="text-xs text-[#00b4d8] font-medium w-9 text-right">{doc.progress}%</span>
-                        </div>
-                      ) : (
+                          <motion.button
+                            className="w-8 h-8 rounded-lg bg-[#f44336]/20 hover:bg-[#f44336]/30 flex items-center justify-center text-[#f44336] transition-all"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleCancelProcessing(doc.id)}
+                            title="取消构建"
+                          >
+                            <StopCircle className="w-4 h-4" />
+                          </motion.button>
+                        </>
+                      )}
+
+                      {/* Status Badge - for completed documents */}
+                      {doc.status !== 'pending' && doc.status !== 'processing' && doc.status !== 'error' && (
                         <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md ${status.bg}`}>
                           <StatusIcon className={`w-3.5 h-3.5 ${status.color} ${status.animate ? 'animate-spin' : ''}`} />
                           <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
@@ -315,15 +578,6 @@ export default function DocumentsView() {
                                 <Eye className="w-4 h-4" />
                                 查看详情
                               </button>
-                              {doc.status === 'error' && (
-                                <button
-                                  className="w-full px-3 py-2 text-left text-sm text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8] flex items-center gap-2"
-                                  onClick={() => handleRetry(doc.id)}
-                                >
-                                  <RefreshCw className="w-4 h-4" />
-                                  重新处理
-                                </button>
-                              )}
                               <button
                                 className="w-full px-3 py-2 text-left text-sm text-[#f44336] hover:bg-[#f44336]/10 flex items-center gap-2"
                                 onClick={() => handleDelete(doc.id)}
@@ -392,8 +646,8 @@ export default function DocumentsView() {
                   <p className="font-medium text-[#f0f4f8]">{selectedDoc.size}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
-                  <p className="text-xs text-[#64748b] mb-0.5">页数</p>
-                  <p className="font-medium text-[#f0f4f8]">{selectedDoc.pages} 页</p>
+                  <p className="text-xs text-[#64748b] mb-0.5">状态</p>
+                  <p className="font-medium text-[#f0f4f8]">{statusConfig[selectedDoc.status].label}</p>
                 </div>
                 {selectedDoc.entities && (
                   <>
@@ -409,21 +663,24 @@ export default function DocumentsView() {
                 )}
               </div>
 
+              {selectedDoc.errorMessage && (
+                <div className="mb-4 p-3 rounded-lg bg-[#f44336]/10 border border-[#f44336]/30">
+                  <p className="text-xs text-[#f44336]">{selectedDoc.errorMessage}</p>
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <motion.button
                   className="flex-1 px-4 py-2.5 neo-btn-primary rounded-lg font-medium text-sm flex items-center justify-center gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    // TODO: 跳转到知识图谱视图
+                    setSelectedDoc(null)
+                  }}
                 >
                   <FileText className="w-4 h-4" />
                   查看图谱
-                </motion.button>
-                <motion.button
-                  className="px-4 py-2.5 neo-btn-secondary rounded-lg font-medium text-sm"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  重新处理
                 </motion.button>
               </div>
             </motion.div>

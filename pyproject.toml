@@ -1,0 +1,65 @@
+[project]
+name = "web-disk"
+version = "0.1.0"
+description = "Web-based Knowledge Graph Construction System"
+# readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # FastAPI
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "python-multipart>=0.0.12",
+
+    # Database
+    "sqlalchemy>=2.0.36",
+
+    # Celery & Redis
+    "celery[redis]>=5.4.0",
+    "redis>=5.2.0",
+
+    # Neo4j
+    "neo4j>=5.26.0",
+
+    # Utilities
+    "python-dotenv>=1.0.1",
+
+    # DISK dependencies
+    "pdfplumber>=0.11.4",
+    "PyMuPDF>=1.24.12",
+    "paddleocr>=2.9.2",
+    "pytesseract>=0.3.13",
+    "pillow>=11.0.0",
+    "pandas>=2.2.3",
+    "pdf2image>=1.17.0",
+    "torch>=2.0.0",
+    "paddlepaddle>=2.6.0",
+
+    # LLM
+    "langchain-community>=0.3.14",
+    "langchain-ollama>=0.2.1",
+    "dashscope>=1.20.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["backend", "DISK"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]

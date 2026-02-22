@@ -24,6 +24,9 @@ export interface KGDocument {
   uploadedAt: string
   entities?: number
   relations?: number
+  taskId?: string
+  errorMessage?: string
+  filePath?: string
 }
 
 export interface PipelineStage {
