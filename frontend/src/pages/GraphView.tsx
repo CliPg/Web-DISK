@@ -462,7 +462,8 @@ export default function GraphView() {
           {graphs.length > 0 && (
             <div className="relative graph-selector">
               <motion.button
-                className="flex items-center gap-2 px-4 py-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+                className="flex items-center gap-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+                style={{ padding: '6px 10px' }}
                 onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
                 whileTap={{ scale: 0.98 }}
               >
@@ -515,7 +516,8 @@ export default function GraphView() {
           {/* Export Buttons */}
           <div className="flex items-center gap-2">
             <motion.button
-              className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+              className="neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+              style={{ padding: '6px 20px' }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleExportJSON}
@@ -526,7 +528,8 @@ export default function GraphView() {
               JSON
             </motion.button>
             <motion.button
-              className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+              className="neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+              style={{ padding: '6px 20px' }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleExportPNG}
@@ -539,7 +542,8 @@ export default function GraphView() {
           </div>
           {/* Refresh Button */}
           <motion.button
-            className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+            className="neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+            style={{ padding: '6px 20px' }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleRefresh}
