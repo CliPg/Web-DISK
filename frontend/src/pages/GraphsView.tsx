@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   X,
   RefreshCw,
+  Eraser,
+  AlertTriangle,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KnowledgeGraph } from '../types'
@@ -22,6 +24,7 @@ export default function GraphsView() {
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
+  const [isClearing, setIsClearing] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedGraph, setSelectedGraph] = useState<KnowledgeGraph | null>(null)
@@ -114,6 +117,30 @@ export default function GraphsView() {
       alert('删除失败: ' + (error instanceof Error ? error.message : '未知错误'))
     } finally {
       setIsDeleting(null)
+    }
+  }
+
+  const handleClear = async (id: string, name: string) => {
+    const graph = graphs.find((g) => g.id === id)
+    const docCount = graph?.document_count || 0
+
+    if (!confirm(
+      `确定要清空知识图谱"${name}"吗？\n\n` +
+      `这将删除所有实体和关系，${docCount} 个关联文档将被重置为待处理状态。` +
+      `\n\n此操作无法撤销！`
+    )) return
+
+    try {
+      setIsClearing(id)
+      const result = await graphsApi.clear(id)
+      await fetchGraphs()
+      setMenuOpen(null)
+      alert(result.message)
+    } catch (error) {
+      console.error('Clear failed:', error)
+      alert('清空失败: ' + (error instanceof Error ? error.message : '未知错误'))
+    } finally {
+      setIsClearing(null)
     }
   }
 
@@ -292,7 +319,7 @@ export default function GraphsView() {
                         initial={{ opacity: 0, scale: 0.95, y: -5 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                        className="absolute right-0 top-11 w-40 neo-card-elevated py-1.5 z-20"
+                        className="absolute right-0 top-11 w-44 neo-card-elevated py-1.5 z-20"
                       >
                         <button
                           className="w-full px-4 py-2.5 text-left text-sm text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8] flex items-center gap-2"
@@ -301,6 +328,19 @@ export default function GraphsView() {
                           <Edit className="w-4 h-4" />
                           编辑
                         </button>
+                        <button
+                          className="w-full px-4 py-2.5 text-left text-sm text-[#f59e0b] hover:bg-[#f59e0b]/10 flex items-center gap-2"
+                          onClick={() => handleClear(graph.id, graph.name)}
+                          disabled={isClearing === graph.id}
+                        >
+                          {isClearing === graph.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Eraser className="w-4 h-4" />
+                          )}
+                          清空数据
+                        </button>
+                        <div className="mx-4 my-1 border-t border-[#2a3548]" />
                         <button
                           className="w-full px-4 py-2.5 text-left text-sm text-[#f44336] hover:bg-[#f44336]/10 flex items-center gap-2"
                           onClick={() => handleDelete(graph.id)}
@@ -311,7 +351,7 @@ export default function GraphsView() {
                           ) : (
                             <Trash2 className="w-4 h-4" />
                           )}
-                          删除
+                          删除图谱
                         </button>
                       </motion.div>
                     )}

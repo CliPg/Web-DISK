@@ -4,13 +4,15 @@ from typing import Optional
 import logging
 
 from backend.core.dependencies import get_db
-from backend.models.database import KnowledgeGraph as DBKnowledgeGraph, Document as DBDocument
+from backend.models.database import KnowledgeGraph as DBKnowledgeGraph, Document as DBDocument, Task as DBTask
 from backend.models.schemas import (
     KnowledgeGraphCreate,
     KnowledgeGraphUpdate,
     KnowledgeGraphResponse,
     KnowledgeGraphListResponse,
 )
+from backend.db.neo4j import Neo4jRepository
+from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -190,3 +192,48 @@ async def set_default_graph(
 
     logger.info(f"Set default knowledge graph: {graph_id}")
     return KnowledgeGraphResponse.model_validate(graph)
+
+
+@router.post("/{graph_id}/clear")
+async def clear_graph(
+    graph_id: str,
+    db: Session = Depends(get_db),
+):
+    """清空知识图谱的所有实体和关系（保留图谱结构）"""
+    graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
+
+    if not graph:
+        raise HTTPException(status_code=404, detail="知识图谱不存在")
+
+    try:
+        # 清空 Neo4j 中的所有实体和关系
+        neo4j_repo = Neo4jRepository()
+        neo4j_repo.clear_all()
+        logger.info(f"Cleared Neo4j graph data for graph: {graph_id}")
+
+        # 获取该图谱下的所有文档
+        documents = db.query(DBDocument).filter(DBDocument.graph_id == graph_id).all()
+
+        # 重置所有文档状态为 pending
+        for doc in documents:
+            doc.status = "pending"
+            # 删除关联的任务记录
+            db.query(DBTask).filter(DBTask.document_id == doc.id).delete()
+
+        # 更新知识图谱统计
+        graph.entity_count = 0
+        graph.relation_count = 0
+        graph.document_count = len(documents)  # 文档数不变
+
+        db.commit()
+
+        logger.info(f"Cleared knowledge graph: {graph_id}, reset {len(documents)} documents")
+        return {
+            "message": f"已清空知识图谱，{len(documents)} 个文档已重置为待处理状态",
+            "reset_documents": len(documents)
+        }
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to clear graph {graph_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"清空失败: {str(e)}")

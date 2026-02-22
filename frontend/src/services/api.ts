@@ -338,4 +338,21 @@ export const graphsApi = {
     }
     return response.json()
   },
+
+  /**
+   * 清空知识图谱
+   */
+  async clear(id: string): Promise<{
+    message: string
+    reset_documents: number
+  }> {
+    const response = await fetch(`${API_BASE}/graphs/${id}/clear`, {
+      method: 'POST',
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || '清空知识图谱失败')
+    }
+    return response.json()
+  },
 }
