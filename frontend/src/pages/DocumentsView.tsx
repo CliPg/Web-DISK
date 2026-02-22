@@ -436,12 +436,12 @@ export default function DocumentsView() {
       >
         {/* Graph Selector */}
         {graphs.length > 0 && (
-          <div className="mb-5 flex items-center gap-3 graph-dropdown">
+          <div className="mb-5 flex items-center gap-3 graph-dropdown" style={{ paddingTop: '8px', paddingLeft: '8px' }}>
             <span className="text-sm text-[#94a3b8] whitespace-nowrap">上传到:</span>
             <div className="relative">
               <motion.button
                 className="flex items-center gap-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
-                style={{ padding: '6px 10px' }}
+                style={{ padding: '8px 10px' }}
                 onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
                 whileTap={{ scale: 0.98 }}
               >
