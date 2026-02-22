@@ -266,7 +266,7 @@ export default function GraphsView() {
                 style={{ marginBottom: index < graphs.length - 1 ? '0' : '0', minHeight: '72px' }}
               >
                 {/* Graph Icon */}
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#00b4d8]/20 to-[#0096c7]/20 flex items-center justify-center shrink-0 border border-[#00b4d8]/30">
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#00b4d8]/20 to-[#0096c7]/20 flex items-center justify-center shrink-0 border border-[#00b4d8]/30" style={{ marginLeft: '8px' }}>
                   <Network className="w-5 h-5 text-[#00b4d8]" />
                 </div>
 
