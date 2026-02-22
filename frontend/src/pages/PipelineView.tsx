@@ -62,7 +62,7 @@ const stageStatusConfig = {
 function mapProgressToStages(progress: number, currentStep: string) {
   const stages = PIPELINE_STAGES.map((stage) => ({
     ...stage,
-    status: 'pending' as const,
+    status: 'pending' as 'pending' | 'running' | 'completed' | 'error',
     progress: 0,
   }))
 
@@ -99,7 +99,7 @@ export default function PipelineView() {
   const [relationsCount, setRelationsCount] = useState(0)
 
   const startTimeRef = useRef<Date | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const unsubscribeRef = useRef<(() => void) | null>(null)
 
   // 格式化时间
@@ -189,12 +189,13 @@ export default function PipelineView() {
             progress: Math.round(data.progress * 100),
           })
 
-          // 更新实体和关系计数
-          if (data.entities_count !== undefined) {
-            setEntitiesCount(data.entities_count)
+          // 更新实体和关系计数（这些字段可能由后端动态添加）
+          const extendedData = data as typeof data & { entities_count?: number; relations_count?: number }
+          if (extendedData.entities_count !== undefined) {
+            setEntitiesCount(extendedData.entities_count)
           }
-          if (data.relations_count !== undefined) {
-            setRelationsCount(data.relations_count)
+          if (extendedData.relations_count !== undefined) {
+            setRelationsCount(extendedData.relations_count)
           }
 
           // 添加日志
