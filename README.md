@@ -477,8 +477,8 @@ docker-compose down
 
 ## 📞 联系方式
 
-- 项目主页: [https://github.com/your-username/web-disk](https://github.com/your-username/web-disk)
-- 问题反馈: [Issues](https://github.com/your-username/web-disk/issues)
+- 项目主页: [https://github.com/CliPg/web-disk](https://github.com/CliPg/web-disk)
+- 问题反馈: [Issues](https://github.com/CliPg/web-disk/issues)
 
 ---
 
@@ -486,6 +486,6 @@ docker-compose down
 
 **如果这个项目对您有帮助，请给一个 ⭐️**
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by CliPg
 
 </div>

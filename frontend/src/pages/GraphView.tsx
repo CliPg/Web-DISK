@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers, Download, RefreshCw } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers, Download, RefreshCw, FileJson, Image as ImageIcon } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KGNode, KGEdge } from '../types'
 import { kgApi } from '../services/api'
@@ -253,6 +253,102 @@ export default function GraphView() {
     }
   }
 
+  // 导出 JSON
+  const handleExportJSON = () => {
+    const exportData = {
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        totalEntities: nodes.length,
+        totalRelations: edges.length,
+      },
+      entities: nodes.map(node => ({
+        id: node.id,
+        label: node.label,
+        type: node.type,
+        description: node.description,
+        properties: node.properties,
+      })),
+      relations: edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+      })),
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `knowledge-graph-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  // 导出 PNG 图片
+  const handleExportPNG = useCallback(() => {
+    const svgElement = containerRef.current?.querySelector('svg')
+    if (!svgElement) return
+
+    // 获取 SVG 的边界框
+    const bbox = svgElement.getBoundingClientRect()
+    const scaleX = zoom
+    const scaleY = zoom
+
+    // 创建克隆的 SVG 用于导出
+    const clone = svgElement.cloneNode(true) as SVGSVGElement
+    clone.setAttribute('width', `${bbox.width * scaleX}`)
+    clone.setAttribute('height', `${bbox.height * scaleY}`)
+    clone.setAttribute('viewBox', `0 0 ${bbox.width} ${bbox.height}`)
+    clone.style.transform = ''
+
+    // 将 SVG 转换为字符串
+    const svgData = new XMLSerializer().serializeToString(clone)
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(svgBlob)
+
+    // 使用 Canvas 转换为 PNG
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = bbox.width * scaleX * 2 // 2x 分辨率
+      canvas.height = bbox.height * scaleY * 2
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        // 填充深色背景
+        ctx.fillStyle = '#0a0e17'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+        // 导出 PNG
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const pngUrl = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = pngUrl
+            a.download = `knowledge-graph-${new Date().toISOString().slice(0, 10)}.png`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(pngUrl)
+          }
+        })
+      }
+      URL.revokeObjectURL(url)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      console.error('Failed to load SVG for export')
+    }
+    img.src = url
+  }, [zoom, nodes, edges])
+
+  // 检查是否有数据可导出
+  const hasData = nodes.length > 0 || edges.length > 0
+
+
   return (
     <div className="h-full flex flex-col gap-4">
       {/* Header */}
@@ -265,6 +361,31 @@ export default function GraphView() {
         </div>
         {/* Legend and Actions */}
         <div className="flex items-center gap-4">
+          {/* Export Buttons */}
+          <div className="flex items-center gap-2">
+            <motion.button
+              className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleExportJSON}
+              disabled={!hasData || isLoading}
+              title="导出为 JSON 文件"
+            >
+              <FileJson className="w-4 h-4" />
+              JSON
+            </motion.button>
+            <motion.button
+              className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleExportPNG}
+              disabled={!hasData || isLoading}
+              title="导出为 PNG 图片"
+            >
+              <ImageIcon className="w-4 h-4" />
+              PNG
+            </motion.button>
+          </div>
           {/* Refresh Button */}
           <motion.button
             className="px-3 py-1.5 neo-btn-secondary rounded-lg flex items-center gap-2 text-sm"
