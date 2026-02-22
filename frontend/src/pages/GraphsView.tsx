@@ -177,7 +177,7 @@ export default function GraphsView() {
         <div className="flex items-center gap-3">
           <motion.button
             className="neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2"
-            style={{ padding: '6px 20px' }}
+            style={{ padding: '6px 12px 6px 16px' }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={openCreateModal}
@@ -189,7 +189,7 @@ export default function GraphsView() {
             onClick={fetchGraphs}
             disabled={isLoading}
             className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
-            style={{ padding: '6px 20px' }}
+            style={{ padding: '6px 12px 6px 16px' }}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             刷新
