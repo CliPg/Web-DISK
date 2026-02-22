@@ -491,7 +491,7 @@ export default function GraphView() {
                       <button
                         key={graph.id}
                         className="w-full text-left text-sm flex items-center gap-2 whitespace-nowrap rounded-lg transition-all hover:bg-[#232d3f]"
-                        style={{ padding: '12px 16px' }}
+                        style={{ padding: '6px 16px' }}
                         onClick={() => {
                           setSelectedGraphId(graph.id)
                           setGraphDropdownOpen(false)
