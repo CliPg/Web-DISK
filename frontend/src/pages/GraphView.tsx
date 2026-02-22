@@ -628,7 +628,10 @@ export default function GraphView() {
           </div>
 
           {/* Graph Info Badge */}
-          <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 bg-[#0a0e17]/80 rounded-lg border border-[#2a3548]">
+          <div
+            className="absolute top-4 left-4 flex items-center gap-2 bg-[#0a0e17]/80 rounded-lg border border-[#2a3548]"
+            style={{ padding: '8px 16px' }}
+          >
             <Layers className="w-4 h-4 text-[#00b4d8]" />
             <span className="text-xs text-[#94a3b8]">缩放: {Math.round(zoom * 100)}%</span>
           </div>
