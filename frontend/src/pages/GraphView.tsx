@@ -76,12 +76,15 @@ export default function GraphView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<KGNode[]>([])
   const [edges, setEdges] = useState<KGEdge[]>([])
+  const positionsRef = useRef<NodePosition[]>([])
   const [positions, setPositions] = useState<NodePosition[]>([])
   const [selectedNode, setSelectedNode] = useState<KGNode | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const animationRef = useRef<number | undefined>(undefined)
+  const edgesRef = useRef<KGEdge[]>([])
+  const dimensionsRef = useRef({ width: 800, height: 600 })
 
   // Load knowledge graph data on mount
   useEffect(() => {
@@ -101,6 +104,7 @@ export default function GraphView() {
 
         setNodes(transformedNodes)
         setEdges(transformedEdges)
+        edgesRef.current = transformedEdges
       } catch (error) {
         console.error('Failed to load graph data:', error)
         setLoadError('加载知识图谱数据失败')
@@ -119,6 +123,7 @@ export default function GraphView() {
       const { width, height } = containerRef.current.getBoundingClientRect()
       if (width === 0 || height === 0) return
       setDimensions({ width, height })
+      dimensionsRef.current = { width, height }
 
       const initialPositions = nodes.map((node, i) => {
         const angle = (i / nodes.length) * Math.PI * 2
@@ -132,6 +137,7 @@ export default function GraphView() {
         }
       })
       setPositions(initialPositions)
+      positionsRef.current = initialPositions
     }
 
     const timer = setTimeout(updateDimensions, 100)
@@ -142,77 +148,123 @@ export default function GraphView() {
     }
   }, [nodes])
 
-  // Force simulation
+  // Force simulation - 使用 ref 避免依赖问题
   useEffect(() => {
     if (positions.length === 0) return
 
+    let stableFrames = 0
+    let frameCount = 0
+    let isRunning = true
+    const maxFrames = 600 // 最多运行 600 帧（约 10 秒）
+
+    // 根据节点数量动态调整参数
+    const nodeCount = positions.length
+    const repulsionForce = Math.max(500, 3000 - nodeCount * 10) // 节点越多，斥力越小
+    const idealDistance = Math.max(80, 150 - nodeCount * 0.5) // 节点越多，理想距离越小
+    const attractionStrength = 0.008 // 弹簧强度
+    const centerGravity = 0.002 // 中心引力
+    const damping = 0.85 // 阻尼（越大收敛越快）
+
     const simulate = () => {
-      setPositions((prev) => {
-        const next = prev.map((p) => ({ ...p }))
+      if (!isRunning) return
 
-        // Repulsion between nodes
-        for (let i = 0; i < next.length; i++) {
-          for (let j = i + 1; j < next.length; j++) {
-            const dx = next[j].x - next[i].x
-            const dy = next[j].y - next[i].y
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1
-            const force = 1800 / (dist * dist)
-            const fx = (dx / dist) * force
-            const fy = (dy / dist) * force
-            next[i].vx -= fx
-            next[i].vy -= fy
-            next[j].vx += fx
-            next[j].vy += fy
-          }
+      const currentEdges = edgesRef.current
+      const currentDimensions = dimensionsRef.current
+
+      // 直接修改 ref 中的位置
+      const next = positionsRef.current.map((p) => ({ ...p }))
+      let totalVelocity = 0
+
+      // Repulsion between nodes (斥力)
+      for (let i = 0; i < next.length; i++) {
+        for (let j = i + 1; j < next.length; j++) {
+          const dx = next[j].x - next[i].x
+          const dy = next[j].y - next[i].y
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1
+          const force = repulsionForce / (dist * dist)
+          const fx = (dx / dist) * force
+          const fy = (dy / dist) * force
+          next[i].vx -= fx
+          next[i].vy -= fy
+          next[j].vx += fx
+          next[j].vy += fy
         }
+      }
 
-        // Attraction along edges
-        edges.forEach((edge) => {
-          const source = next.find((n) => n.id === edge.source)
-          const target = next.find((n) => n.id === edge.target)
-          if (source && target) {
-            const dx = target.x - source.x
-            const dy = target.y - source.y
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1
-            const force = (dist - 100) * 0.015
-            const fx = (dx / dist) * force
-            const fy = (dy / dist) * force
-            source.vx += fx
-            source.vy += fy
-            target.vx -= fx
-            target.vy -= fy
-          }
-        })
-
-        // Center gravity
-        const centerX = dimensions.width / 2
-        const centerY = dimensions.height / 2
-        next.forEach((n) => {
-          n.vx += (centerX - n.x) * 0.003
-          n.vy += (centerY - n.y) * 0.003
-        })
-
-        // Apply velocity with damping
-        next.forEach((n) => {
-          n.vx *= 0.88
-          n.vy *= 0.88
-          n.x += n.vx
-          n.y += n.vy
-          n.x = Math.max(50, Math.min(dimensions.width - 50, n.x))
-          n.y = Math.max(50, Math.min(dimensions.height - 50, n.y))
-        })
-
-        return next
+      // Attraction along edges (弹簧引力)
+      currentEdges.forEach((edge) => {
+        const source = next.find((n) => n.id === edge.source)
+        const target = next.find((n) => n.id === edge.target)
+        if (source && target) {
+          const dx = target.x - source.x
+          const dy = target.y - source.y
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1
+          const force = (dist - idealDistance) * attractionStrength
+          const fx = (dx / dist) * force
+          const fy = (dy / dist) * force
+          source.vx += fx
+          source.vy += fy
+          target.vx -= fx
+          target.vy -= fy
+        }
       })
+
+      // Center gravity (中心引力)
+      const centerX = currentDimensions.width / 2
+      const centerY = currentDimensions.height / 2
+      next.forEach((n) => {
+        n.vx += (centerX - n.x) * centerGravity
+        n.vy += (centerY - n.y) * centerGravity
+      })
+
+      // Apply velocity with damping (应用速度和阻尼)
+      next.forEach((n) => {
+        n.vx *= damping
+        n.vy *= damping
+        n.x += n.vx
+        n.y += n.vy
+        n.x = Math.max(50, Math.min(currentDimensions.width - 50, n.x))
+        n.y = Math.max(50, Math.min(currentDimensions.height - 50, n.y))
+        totalVelocity += Math.abs(n.vx) + Math.abs(n.vy)
+      })
+
+      positionsRef.current = next
+
+      frameCount++
+      const avgVelocity = totalVelocity / next.length
+
+      // 随着时间降低稳定阈值，初期更容易判定为稳定
+      const dynamicThreshold = Math.max(0.05, 0.5 - frameCount * 0.001)
+
+      // 检查是否稳定
+      if (avgVelocity < dynamicThreshold) {
+        stableFrames++
+      } else {
+        stableFrames = Math.max(0, stableFrames - 1) // 不稳定时减少计数
+      }
+
+      // 更新状态用于渲染
+      setPositions(next)
+
+      // 达到稳定帧数或超过最大帧数时停止
+      if (stableFrames > 30 || frameCount >= maxFrames) {
+        isRunning = false
+        console.log(`Simulation stabilized after ${frameCount} frames`)
+        return
+      }
 
       animationRef.current = requestAnimationFrame(simulate)
     }
 
     animationRef.current = requestAnimationFrame(simulate)
+
     return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current)
+      isRunning = false
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current)
+      }
     }
-  }, [positions.length, dimensions])
+  }, [positions.length])
 
   const getPosition = useCallback(
     (id: string) => positions.find((p) => p.id === id) || { x: 0, y: 0 },
@@ -245,6 +297,7 @@ export default function GraphView() {
 
       setNodes(transformedNodes)
       setEdges(transformedEdges)
+      edgesRef.current = transformedEdges
     } catch (error) {
       console.error('Failed to refresh graph data:', error)
       setLoadError('加载知识图谱数据失败')
