@@ -549,7 +549,10 @@ export default function GraphView() {
             刷新
           </motion.button>
           {/* Legend */}
-          <div className="flex items-center gap-4 px-4 py-2 neo-card">
+          <div
+            className="flex items-center gap-4 neo-card"
+            style={{ padding: '8px 16px' }}
+          >
             {Object.entries(nodeColors).map(([type, colors]) => (
               <div key={type} className="flex items-center gap-2">
                 <div
