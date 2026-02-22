@@ -608,7 +608,7 @@ export default function PipelineView() {
           className="fixed bottom-6 right-6 px-4 py-2 neo-btn-primary rounded-lg flex items-center gap-2 shadow-lg"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/graph')}
+          onClick={() => navigate('/')}
         >
           <Network className="w-4 h-4" />
           查看知识图谱

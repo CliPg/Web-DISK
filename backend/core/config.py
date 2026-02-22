@@ -33,9 +33,9 @@ class Settings(BaseSettings):
     SQLITE_DB_PATH: Path = Path(__file__).resolve().parent.parent.parent / "data" / "app.db"
 
     # Neo4j
-    NEO4J_URI: str = "bolt://localhost:7687"
+    NEO4J_URI: str = "neo4j://127.0.0.1:7687"
     NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "password"
+    NEO4J_PASSWORD: str = "12345678"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -49,7 +49,8 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "qwen-plus"
 
     class Config:
-        env_file = ".env"
+        env_file = Path(__file__).resolve().parent.parent.parent / ".env"
+        env_file_encoding = "utf-8"
         case_sensitive = True
 
 
