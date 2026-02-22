@@ -65,3 +65,15 @@ export interface LogEntry {
   message: string
   source?: string
 }
+
+export interface KnowledgeGraph {
+  id: string
+  name: string
+  description?: string
+  entity_count: number
+  relation_count: number
+  document_count: number
+  created_at: string
+  updated_at: string
+  is_default: boolean
+}

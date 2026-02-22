@@ -7,10 +7,12 @@ import {
   Activity,
   Settings,
   Database,
+  Network,
 } from 'lucide-react'
 
 const navItems = [
   { icon: Share2, label: 'Visualize', path: '/'},
+  { icon: Network, label: 'Graphs', path: '/graphs'},
   { icon: FileText, label: 'Document', path: '/documents'},
   { icon: Search, label: 'Search', path: '/search'},
   { icon: Activity, label: 'Monitor', path: '/pipeline'},

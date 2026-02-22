@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from backend.core.config import settings
 from backend.db.session import init_db
-from backend.api import documents, tasks, knowledge_graph
+from backend.api import documents, tasks, knowledge_graph, graphs
 import logging
 
 logging.basicConfig(
@@ -49,6 +49,7 @@ app.add_middleware(
 app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
 app.include_router(tasks.router, prefix=settings.API_V1_PREFIX)
 app.include_router(knowledge_graph.router, prefix=settings.API_V1_PREFIX)
+app.include_router(graphs.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

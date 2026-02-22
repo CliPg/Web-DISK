@@ -1,13 +1,13 @@
 import uuid
 import shutil
 from pathlib import Path
-from typing import Generator
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query
+from typing import Generator, Optional
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, Form
 from sqlalchemy.orm import Session
 
 from backend.core.dependencies import get_db, get_settings
 from backend.core.config import Settings
-from backend.models.database import Document as DBDocument, Task as DBTask
+from backend.models.database import Document as DBDocument, Task as DBTask, KnowledgeGraph as DBKnowledgeGraph
 from backend.models.schemas import (
     DocumentUploadResponse,
     DocumentResponse,
@@ -29,14 +29,26 @@ def get_upload_dir(settings: Settings = Depends(get_settings)) -> Path:
     return settings.UPLOAD_DIR
 
 
+def ensure_default_graph(db: Session) -> DBKnowledgeGraph:
+    """确保存在默认知识图谱"""
+    from backend.api.graphs import ensure_default_graph as _ensure_default_graph
+    return _ensure_default_graph(db)
+
+
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
+    graph_id: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     upload_dir: Path = Depends(get_upload_dir),
     settings: Settings = Depends(get_settings),
 ):
-    """上传PDF文档并创建处理任务"""
+    """上传PDF文档并创建处理任务
+
+    Args:
+        file: 上传的文件
+        graph_id: 目标知识图谱ID，如果不指定则使用默认图谱
+    """
     # 验证文件类型
     if not file.filename:
         raise HTTPException(status_code=400, detail="文件名不能为空")
@@ -47,6 +59,15 @@ async def upload_document(
             status_code=400,
             detail=f"不支持的文件类型，仅支持: {', '.join(settings.ALLOWED_EXTENSIONS)}"
         )
+
+    # 确定目标知识图谱
+    target_graph = None
+    if graph_id:
+        target_graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
+        if not target_graph:
+            raise HTTPException(status_code=400, detail="指定的知识图谱不存在")
+    else:
+        target_graph = ensure_default_graph(db)
 
     # 生成唯一文件名
     unique_filename = f"{uuid.uuid4()}{file_ext}"
@@ -68,6 +89,7 @@ async def upload_document(
         file_path=str(file_path),
         file_size=file_size,
         status=DocumentStatus.PENDING,
+        graph_id=target_graph.id,
     )
     db.add(document)
     db.commit()
@@ -85,6 +107,8 @@ async def upload_document(
     db.refresh(task)
 
     # 不再自动提交Celery任务，改为手动触发
+
+    logger.info(f"Document uploaded: {document.id} -> graph: {target_graph.name}")
 
     return DocumentUploadResponse(
         document_id=document.id,

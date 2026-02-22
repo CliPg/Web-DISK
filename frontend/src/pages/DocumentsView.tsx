@@ -15,10 +15,13 @@ import {
   FolderOpen,
   Play,
   StopCircle,
+  ChevronDown,
+  Network,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KGDocument } from '../types'
-import { documentsApi, tasksApi } from '../services/api'
+import type { KnowledgeGraph } from '../types'
+import { documentsApi, tasksApi, graphsApi } from '../services/api'
 
 const statusConfig = {
   pending: {
@@ -81,6 +84,9 @@ const mapBackendStatus = (status: string): KGDocument['status'] => {
 
 export default function DocumentsView() {
   const [documents, setDocuments] = useState<KGDocument[]>([])
+  const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
+  const [selectedGraphId, setSelectedGraphId] = useState<string>('default')
+  const [graphDropdownOpen, setGraphDropdownOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -91,6 +97,23 @@ export default function DocumentsView() {
 
   // 存储任务取消订阅的函数
   const unsubscribeRefs = useRef<Map<string, () => void>>(new Map())
+
+  // 加载知识图谱列表
+  const fetchGraphs = useCallback(async () => {
+    try {
+      const data = await graphsApi.list()
+      setGraphs(data.graphs)
+      // 如果有默认图谱，自动选中
+      const defaultGraph = data.graphs.find((g) => g.is_default)
+      if (defaultGraph) {
+        setSelectedGraphId(defaultGraph.id)
+      } else if (data.graphs.length > 0) {
+        setSelectedGraphId(data.graphs[0].id)
+      }
+    } catch (error) {
+      console.error('Failed to fetch graphs:', error)
+    }
+  }, [])
 
   // 加载文档列表
   const fetchDocuments = useCallback(async () => {
@@ -162,16 +185,32 @@ export default function DocumentsView() {
     unsubscribeRefs.current.set(docId, unsubscribe)
   }
 
-  // 初始加载文档列表
+  // 初始加载文档列表和知识图谱
   useEffect(() => {
     fetchDocuments()
+    fetchGraphs()
 
     // 清理函数：取消所有订阅
     return () => {
       unsubscribeRefs.current.forEach((unsubscribe) => unsubscribe())
       unsubscribeRefs.current.clear()
     }
-  }, [fetchDocuments])
+  }, [fetchDocuments, fetchGraphs])
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.graph-dropdown')) {
+        setGraphDropdownOpen(false)
+      }
+    }
+
+    if (graphDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [graphDropdownOpen])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -228,8 +267,8 @@ export default function DocumentsView() {
     setIsUploading(true)
 
     try {
-      // 调用上传API
-      const result = await documentsApi.upload(file)
+      // 调用上传API，传递选中的知识图谱ID
+      const result = await documentsApi.upload(file, selectedGraphId)
 
       // 上传成功，更新文档信息并订阅任务进度
       setDocuments((prev) =>
@@ -394,6 +433,60 @@ export default function DocumentsView() {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Graph Selector */}
+        {graphs.length > 0 && (
+          <div className="mb-5 flex items-center gap-3 graph-dropdown">
+            <span className="text-sm text-[#94a3b8] whitespace-nowrap">上传到:</span>
+            <div className="relative">
+              <motion.button
+                className="flex items-center gap-2 px-4 py-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+                onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
+                    <Network className="w-3 h-3 text-[#00b4d8]" />
+                  </div>
+                  <span className="text-[#f0f4f8]">
+                    {graphs.find((g) => g.id === selectedGraphId)?.name || '选择知识图谱'}
+                  </span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+              </motion.button>
+
+              <AnimatePresence>
+                {graphDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="absolute top-full left-0 mt-2 w-full neo-card-elevated rounded-lg py-1.5 z-10"
+                  >
+                    {graphs.map((graph) => (
+                      <button
+                        key={graph.id}
+                        className="w-full px-4 py-2.5 text-left text-sm hover:bg-[#1a2332] transition-colors flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedGraphId(graph.id)
+                          setGraphDropdownOpen(false)
+                        }}
+                      >
+                        <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center shrink-0">
+                          <Network className="w-3 h-3 text-[#00b4d8]" />
+                        </div>
+                        <span className="text-[#f0f4f8] truncate">{graph.name}</span>
+                        {selectedGraphId === graph.id && (
+                          <CheckCircle2 className="w-4 h-4 text-[#00c853] ml-auto shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col items-center justify-center py-4">
           <motion.div
             className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${

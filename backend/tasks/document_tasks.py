@@ -13,7 +13,7 @@ sys.path.insert(0, str(disk_path))
 from backend.tasks.celery_app import celery_app
 from backend.db.neo4j import Neo4jRepository
 from backend.db.session import SessionLocal
-from backend.models.database import Document as DBDocument, Task as DBTask
+from backend.models.database import Document as DBDocument, Task as DBTask, KnowledgeGraph as DBKnowledgeGraph
 from backend.models.schemas import TaskStatus
 
 # 导入DISK模块
@@ -64,6 +64,45 @@ def load_knowledge_from_neo4j() -> KnowledgeGraph:
     return KnowledgeGraph()
 
 
+def update_graph_stats(graph_id: str, db: SessionLocal):
+    """更新知识图谱的统计信息"""
+    try:
+        # 获取图谱下所有已完成任务的实体和关系统计
+        from sqlalchemy import func
+
+        # 获取该图谱下的文档ID列表
+        doc_ids = db.query(DBDocument.id).filter(DBDocument.graph_id == graph_id).all()
+        doc_ids = [d[0] for d in doc_ids]
+
+        if not doc_ids:
+            return
+
+        # 获取这些文档关联的最新任务的统计
+        stats = db.query(
+            func.sum(DBTask.entities_count).label('entities'),
+            func.sum(DBTask.relations_count).label('relations')
+        ).join(
+            DBDocument, DBDocument.id == DBTask.document_id
+        ).filter(
+            DBDocument.graph_id == graph_id,
+            DBTask.status == TaskStatus.COMPLETED
+        ).first()
+
+        entity_count = stats.entities or 0
+        relation_count = stats.relations or 0
+
+        # 更新知识图谱的统计信息
+        graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
+        if graph:
+            graph.entity_count = int(entity_count)
+            graph.relation_count = int(relation_count)
+            graph.document_count = len(doc_ids)
+            db.commit()
+
+    except Exception as e:
+        logger.error(f"Failed to update graph stats: {e}")
+
+
 @celery_app.task(base=CallbackTask, name="backend.tasks.document_tasks.process_document", bind=True)
 def process_document(self, document_id: str, file_path: str, task_id: str):
     """处理文档，构建知识图谱
@@ -74,9 +113,22 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         task_id: 数据库任务ID
     """
     db = SessionLocal()
+    graph_id = None
     try:
+        # 获取文档信息，获取关联的知识图谱
+        document = db.query(DBDocument).filter(DBDocument.id == document_id).first()
+        if not document:
+            raise Exception(f"文档不存在: {document_id}")
+
+        graph_id = document.graph_id
+        graph = None
+        if graph_id:
+            graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
+            if graph:
+                logger.info(f"Processing document for graph: {graph.name}")
+
         # 更新任务状态为处理中
-        update_task_progress(task_id, 0.0, "初始化", "准备处理文档...", TaskStatus.PROCESSING)
+        update_task_progress(task_id, 0.0, "初始化", f"准备处理文档{' (图谱: ' + graph.name + ')' if graph else ''}...", TaskStatus.PROCESSING)
 
         # 初始化DISK实例（每个任务独立实例）
         kg = load_knowledge_from_neo4j()
@@ -202,6 +254,10 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         if document:
             document.status = TaskStatus.COMPLETED
             db.commit()
+
+        # 更新知识图谱统计信息
+        if graph_id:
+            update_graph_stats(graph_id, db)
 
         return {
             "status": "completed",

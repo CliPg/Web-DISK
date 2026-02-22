@@ -7,7 +7,7 @@ export const documentsApi = {
   /**
    * 上传文档
    */
-  async upload(file: File): Promise<{
+  async upload(file: File, graphId?: string): Promise<{
     document_id: string
     filename: string
     task_id: string
@@ -15,6 +15,9 @@ export const documentsApi = {
   }> {
     const formData = new FormData()
     formData.append('file', file)
+    if (graphId) {
+      formData.append('graph_id', graphId)
+    }
 
     const response = await fetch(`${API_BASE}/documents/upload`, {
       method: 'POST',
@@ -245,6 +248,94 @@ export const kgApi = {
   }> {
     const response = await fetch(`${API_BASE}/knowledge-graph/relations?limit=${limit}&offset=${offset}`)
     if (!response.ok) throw new Error('获取关系列表失败')
+    return response.json()
+  },
+}
+
+/**
+ * 知识图谱管理API服务
+ */
+export const graphsApi = {
+  /**
+   * 获取知识图谱列表
+   */
+  async list(): Promise<{
+    graphs: Array<{
+      id: string
+      name: string
+      description?: string
+      entity_count: number
+      relation_count: number
+      document_count: number
+      created_at: string
+      updated_at: string
+      is_default: boolean
+    }>
+  }> {
+    const response = await fetch(`${API_BASE}/graphs`)
+    if (!response.ok) throw new Error('获取知识图谱列表失败')
+    return response.json()
+  },
+
+  /**
+   * 创建知识图谱
+   */
+  async create(data: {
+    name: string
+    description?: string
+  }): Promise<{
+    id: string
+    name: string
+    description?: string
+    created_at: string
+  }> {
+    const response = await fetch(`${API_BASE}/graphs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || '创建知识图谱失败')
+    }
+    return response.json()
+  },
+
+  /**
+   * 删除知识图谱
+   */
+  async delete(id: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE}/graphs/${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || '删除知识图谱失败')
+    }
+    return response.json()
+  },
+
+  /**
+   * 更新知识图谱
+   */
+  async update(id: string, data: {
+    name?: string
+    description?: string
+  }): Promise<{
+    id: string
+    name: string
+    description?: string
+    updated_at: string
+  }> {
+    const response = await fetch(`${API_BASE}/graphs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || '更新知识图谱失败')
+    }
     return response.json()
   },
 }

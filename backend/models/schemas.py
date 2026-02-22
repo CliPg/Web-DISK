@@ -116,3 +116,38 @@ class KnowledgeGraphStats(BaseModel):
     total_relations: int
     entity_types: dict[str, int]
     relation_types: dict[str, int]
+
+
+# ==================== Knowledge Graph Models ====================
+
+class KnowledgeGraphCreate(BaseModel):
+    """创建知识图谱请求"""
+    name: str = Field(..., min_length=2, max_length=50)
+    description: Optional[str] = Field(None, max_length=200)
+
+
+class KnowledgeGraphUpdate(BaseModel):
+    """更新知识图谱请求"""
+    name: Optional[str] = Field(None, min_length=2, max_length=50)
+    description: Optional[str] = Field(None, max_length=200)
+
+
+class KnowledgeGraphResponse(BaseModel):
+    """知识图谱响应"""
+    id: str
+    name: str
+    description: Optional[str] = None
+    entity_count: int
+    relation_count: int
+    document_count: int
+    created_at: datetime
+    updated_at: datetime
+    is_default: bool
+
+    class Config:
+        from_attributes = True
+
+
+class KnowledgeGraphListResponse(BaseModel):
+    """知识图谱列表响应"""
+    graphs: list[KnowledgeGraphResponse]
