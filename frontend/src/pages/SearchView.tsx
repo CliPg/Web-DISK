@@ -65,7 +65,7 @@ export default function SearchView() {
       : results.filter((r) => r.type === activeFilter)
 
   return (
-    <div className="h-full flex flex-col gap-6 mx-auto" style={{ maxWidth: '900px' }}>
+    <div className="h-full flex flex-col gap-6" style={{ maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
       {/* Header */}
       <div className="text-center" style={{ paddingTop: '16px' }}>
         <motion.div
