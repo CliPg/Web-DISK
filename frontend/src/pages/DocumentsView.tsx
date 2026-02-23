@@ -111,8 +111,18 @@ export default function DocumentsView() {
     }
   }, [])
 
-  // 加载文档列表
+  // 刷新所有数据
+  const refreshAll = useCallback(async () => {
+    await fetchGraphs()
+  }, [fetchGraphs])
+
+  // 加载文档列表（依赖于 graphs 数据）
   const fetchDocuments = useCallback(async () => {
+    // 确保 graphs 已经加载完成
+    if (graphs.length === 0) {
+      return
+    }
+
     try {
       setIsLoading(true)
       const data = await documentsApi.list({ limit: 100 })
@@ -155,7 +165,7 @@ export default function DocumentsView() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [graphs])
 
   // 订阅任务进度
   const subscribeToTaskProgress = (taskId: string, docId: string) => {
@@ -431,7 +441,7 @@ export default function DocumentsView() {
           onChange={handleFileSelect}
         />
         <button
-          onClick={fetchDocuments}
+          onClick={refreshAll}
           disabled={isLoading}
           className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
           style={{ padding: '6px 10px 6px 14px' }}
