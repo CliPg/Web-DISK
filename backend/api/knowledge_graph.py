@@ -8,11 +8,13 @@ router = APIRouter(prefix="/knowledge-graph", tags=["knowledge-graph"])
 neo4j_repo = Neo4jRepository()
 
 
-@router.get("/stats", response_model=KnowledgeGraphStats)
-async def get_kg_stats():
+@router.get("/stats")
+async def get_kg_stats(
+    graph_id: Optional[str] = Query(None, description="知识图谱ID，不传则返回全局统计")
+):
     """获取知识图谱统计信息"""
     try:
-        stats = neo4j_repo.get_stats()
+        stats = neo4j_repo.get_stats(graph_id=graph_id)
         return KnowledgeGraphStats(**stats)
     except Exception as e:
         return KnowledgeGraphStats(
@@ -25,12 +27,13 @@ async def get_kg_stats():
 
 @router.get("/entities")
 async def get_entities(
+    graph_id: str = Query(..., description="知识图谱ID"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
-    """获取实体列表"""
+    """获取指定知识图谱的实体列表"""
     try:
-        entities = neo4j_repo.get_entities(limit=limit, offset=offset)
+        entities = neo4j_repo.get_entities(graph_id=graph_id, limit=limit, offset=offset)
         return {"entities": entities, "total": len(entities)}
     except Exception as e:
         return {"entities": [], "total": 0}
@@ -38,12 +41,13 @@ async def get_entities(
 
 @router.get("/relations")
 async def get_relations(
+    graph_id: str = Query(..., description="知识图谱ID"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
 ):
-    """获取关系列表"""
+    """获取指定知识图谱的关系列表"""
     try:
-        relations = neo4j_repo.get_relations(limit=limit, offset=offset)
+        relations = neo4j_repo.get_relations(graph_id=graph_id, limit=limit, offset=offset)
         return {"relations": relations, "total": len(relations)}
     except Exception as e:
         return {"relations": [], "total": 0}
@@ -51,7 +55,7 @@ async def get_relations(
 
 @router.post("/clear")
 async def clear_kg():
-    """清空知识图谱（危险操作）"""
+    """清空所有知识图谱数据（危险操作）"""
     try:
         neo4j_repo.clear_all()
         return {"message": "知识图谱已清空"}

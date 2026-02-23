@@ -231,10 +231,12 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         from models.neo4j_connector import Neo4jConnector
         from backend.core.config import settings
 
+        # 传入 graph_id 实现数据隔离
         connector = Neo4jConnector(
             uri=settings.NEO4J_URI,
             user=settings.NEO4J_USER,
-            password=settings.NEO4J_PASSWORD
+            password=settings.NEO4J_PASSWORD,
+            graph_id=graph_id
         )
         connector.create_entities(final_kg.entities)
         connector.create_relations(final_kg.relations)

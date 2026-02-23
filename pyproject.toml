@@ -11,20 +11,15 @@ dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.6.0",
     "python-multipart>=0.0.12",
-
     # Database
     "sqlalchemy>=2.0.36",
-
     # Celery & Redis
     "celery[redis]>=5.4.0",
     "redis>=5.2.0",
-
     # Neo4j
     "neo4j>=5.26.0",
-
     # Utilities
     "python-dotenv>=1.0.1",
-
     # DISK dependencies
     "pdfplumber>=0.11.4",
     "PyMuPDF>=1.24.12",
@@ -35,11 +30,11 @@ dependencies = [
     "pdf2image>=1.17.0",
     "torch>=2.0.0",
     "paddlepaddle>=2.6.0",
-
     # LLM
     "langchain-community>=0.3.14",
     "langchain-ollama>=0.2.1",
     "dashscope>=1.20.0",
+    "rapidocr-onnxruntime>=1.4.4",
 ]
 
 [build-system]

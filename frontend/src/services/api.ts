@@ -205,13 +205,16 @@ export const kgApi = {
   /**
    * 获取知识图谱统计
    */
-  async getStats(): Promise<{
+  async getStats(graphId?: string): Promise<{
     total_entities: number
     total_relations: number
     entity_types: Record<string, number>
     relation_types: Record<string, number>
   }> {
-    const response = await fetch(`${API_BASE}/knowledge-graph/stats`)
+    const url = graphId
+      ? `${API_BASE}/knowledge-graph/stats?graph_id=${graphId}`
+      : `${API_BASE}/knowledge-graph/stats`
+    const response = await fetch(url)
     if (!response.ok) throw new Error('获取图谱统计失败')
     return response.json()
   },
@@ -219,7 +222,7 @@ export const kgApi = {
   /**
    * 获取实体列表
    */
-  async getEntities(limit = 100, offset = 0): Promise<{
+  async getEntities(graphId: string, limit = 100, offset = 0): Promise<{
     entities: Array<{
       id: string
       labels: string[]
@@ -227,7 +230,7 @@ export const kgApi = {
     }>
     total: number
   }> {
-    const response = await fetch(`${API_BASE}/knowledge-graph/entities?limit=${limit}&offset=${offset}`)
+    const response = await fetch(`${API_BASE}/knowledge-graph/entities?graph_id=${graphId}&limit=${limit}&offset=${offset}`)
     if (!response.ok) throw new Error('获取实体列表失败')
     return response.json()
   },
@@ -235,7 +238,7 @@ export const kgApi = {
   /**
    * 获取关系列表
    */
-  async getRelations(limit = 100, offset = 0): Promise<{
+  async getRelations(graphId: string, limit = 100, offset = 0): Promise<{
     relations: Array<{
       start_id: string
       start_labels: string[]
@@ -246,7 +249,7 @@ export const kgApi = {
     }>
     total: number
   }> {
-    const response = await fetch(`${API_BASE}/knowledge-graph/relations?limit=${limit}&offset=${offset}`)
+    const response = await fetch(`${API_BASE}/knowledge-graph/relations?graph_id=${graphId}&limit=${limit}&offset=${offset}`)
     if (!response.ok) throw new Error('获取关系列表失败')
     return response.json()
   },

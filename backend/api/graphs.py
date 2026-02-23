@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 import logging
+import os
 
 from backend.core.dependencies import get_db
 from backend.models.database import KnowledgeGraph as DBKnowledgeGraph, Document as DBDocument, Task as DBTask
@@ -143,7 +144,7 @@ async def delete_graph(
     graph_id: str,
     db: Session = Depends(get_db),
 ):
-    """删除知识图谱"""
+    """删除知识图谱（包括关联的文档、任务和文件）"""
     graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
 
     if not graph:
@@ -153,20 +154,32 @@ async def delete_graph(
     if graph.is_default:
         raise HTTPException(status_code=400, detail="不允许删除默认知识图谱")
 
-    # 检查是否有关联文档
-    doc_count = db.query(DBDocument).filter(DBDocument.graph_id == graph_id).count()
-    if doc_count > 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"该知识图谱还有 {doc_count} 个关联文档，请先删除这些文档"
-        )
+    try:
+        # 获取该图谱下的所有文档
+        documents = db.query(DBDocument).filter(DBDocument.graph_id == graph_id).all()
 
-    # 删除图谱（级联删除会处理关联关系）
-    db.delete(graph)
-    db.commit()
+        # 删除文档文件
+        for doc in documents:
+            if doc.file_path and os.path.exists(doc.file_path):
+                try:
+                    os.remove(doc.file_path)
+                    logger.info(f"Deleted file: {doc.file_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete file {doc.file_path}: {e}")
 
-    logger.info(f"Deleted knowledge graph: {graph_id}")
-    return {"message": "知识图谱已删除"}
+        # 删除图谱（级联删除会自动删除关联的文档和任务）
+        db.delete(graph)
+        db.commit()
+
+        logger.info(f"Deleted knowledge graph: {graph_id}, with {len(documents)} documents")
+        return {
+            "message": f"知识图谱已删除，同时删除了 {len(documents)} 个关联文档"
+        }
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete graph {graph_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"删除失败: {str(e)}")
 
 
 @router.post("/{graph_id}/set-default", response_model=KnowledgeGraphResponse)
@@ -199,16 +212,16 @@ async def clear_graph(
     graph_id: str,
     db: Session = Depends(get_db),
 ):
-    """清空知识图谱的所有实体和关系（保留图谱结构）"""
+    """清空指定知识图谱的所有实体和关系（保留图谱结构和文档）"""
     graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
 
     if not graph:
         raise HTTPException(status_code=404, detail="知识图谱不存在")
 
     try:
-        # 清空 Neo4j 中的所有实体和关系
+        # 清空 Neo4j 中该知识图谱的实体和关系
         neo4j_repo = Neo4jRepository()
-        neo4j_repo.clear_all()
+        deleted_stats = neo4j_repo.clear_graph(graph_id)
         logger.info(f"Cleared Neo4j graph data for graph: {graph_id}")
 
         # 获取该图谱下的所有文档
@@ -229,8 +242,10 @@ async def clear_graph(
 
         logger.info(f"Cleared knowledge graph: {graph_id}, reset {len(documents)} documents")
         return {
-            "message": f"已清空知识图谱，{len(documents)} 个文档已重置为待处理状态",
-            "reset_documents": len(documents)
+            "message": f"已清空知识图谱，删除了 {deleted_stats['nodes']} 个实体和 {deleted_stats['relations']} 个关系，{len(documents)} 个文档已重置为待处理状态",
+            "reset_documents": len(documents),
+            "deleted_nodes": deleted_stats['nodes'],
+            "deleted_relations": deleted_stats['relations']
         }
 
     except Exception as e:

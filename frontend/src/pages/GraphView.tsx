@@ -135,10 +135,10 @@ export default function GraphView() {
       setIsLoading(true)
       setLoadError(null)
       try {
-        // 并行加载实体和关系
+        // 并行加载实体和关系，传入 graph_id
         const [entitiesData, relationsData] = await Promise.all([
-          kgApi.getEntities(500, 0),
-          kgApi.getRelations(500, 0),
+          kgApi.getEntities(selectedGraphId, 500, 0),
+          kgApi.getRelations(selectedGraphId, 500, 0),
         ])
 
         // 转换数据格式
