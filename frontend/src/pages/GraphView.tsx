@@ -14,6 +14,15 @@ interface NodePosition {
   vy: number
 }
 
+interface DragState {
+  isDragging: boolean
+  nodeId: string | null
+  startX: number
+  startY: number
+  offsetX: number
+  offsetY: number
+}
+
 const nodeColors: Record<KGNode['type'], { bg: string; border: string; glow: string }> = {
   concept:     { bg: '#3b82f6', border: '#60a5fa', glow: 'rgba(59, 130, 246, 0.4)' },
   technology:  { bg: '#22c55e', border: '#4ade80', glow: 'rgba(34, 197, 94, 0.4)' },
@@ -87,6 +96,18 @@ export default function GraphView() {
   const edgesRef = useRef<KGEdge[]>([])
   const dimensionsRef = useRef({ width: 800, height: 600 })
 
+  // 拖拽状态
+  const [dragState, setDragState] = useState<DragState>({
+    isDragging: false,
+    nodeId: null,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0,
+  })
+  const dragStateRef = useRef<DragState>(dragState)
+  const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null)
+
   // 知识图谱选择相关状态
   const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
   const [selectedGraphId, setSelectedGraphId] = useState<string | null>(null)
@@ -126,6 +147,51 @@ export default function GraphView() {
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [graphDropdownOpen])
+
+  // 同步拖拽状态到 ref
+  useEffect(() => {
+    dragStateRef.current = dragState
+  }, [dragState])
+
+  // 处理拖拽的鼠标移动事件
+  useEffect(() => {
+    if (!dragState.isDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const currentDrag = dragStateRef.current
+      if (!currentDrag.isDragging || currentDrag.nodeId === null) return
+
+      setPositions((prevPositions) =>
+        prevPositions.map((pos) =>
+          pos.id === currentDrag.nodeId
+            ? {
+                ...pos,
+                x: e.clientX - currentDrag.offsetX,
+                y: e.clientY - currentDrag.offsetY,
+                vx: 0,
+                vy: 0,
+              }
+            : pos
+        )
+      )
+    }
+
+    const handleMouseUp = () => {
+      setDragState((prev) => ({
+        ...prev,
+        isDragging: false,
+        nodeId: null,
+      }))
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [dragState.isDragging])
 
   // Load knowledge graph data when selected graph changes
   useEffect(() => {
@@ -200,6 +266,10 @@ export default function GraphView() {
     let isRunning = true
     const maxFrames = 600 // 最多运行 600 帧（约 10 秒）
 
+    // 检查是否正在拖拽
+    const isDraggingNode = () => dragStateRef.current.isDragging
+    const getDraggingNodeId = () => dragStateRef.current.nodeId
+
     // 根据节点数量动态调整参数
     const nodeCount = positions.length
     const repulsionForce = Math.max(500, 3000 - nodeCount * 10) // 节点越多，斥力越小
@@ -211,8 +281,15 @@ export default function GraphView() {
     const simulate = () => {
       if (!isRunning) return
 
+      // 拖拽时暂停模拟
+      if (isDraggingNode()) {
+        animationRef.current = requestAnimationFrame(simulate)
+        return
+      }
+
       const currentEdges = edgesRef.current
       const currentDimensions = dimensionsRef.current
+      const draggingNodeId = getDraggingNodeId()
 
       // 直接修改 ref 中的位置
       const next = positionsRef.current.map((p) => ({ ...p }))
@@ -220,7 +297,13 @@ export default function GraphView() {
 
       // Repulsion between nodes (斥力)
       for (let i = 0; i < next.length; i++) {
+        // 跳过正在拖拽的节点
+        if (next[i].id === draggingNodeId) continue
+
         for (let j = i + 1; j < next.length; j++) {
+          // 跳过正在拖拽的节点
+          if (next[j].id === draggingNodeId) continue
+
           const dx = next[j].x - next[i].x
           const dy = next[j].y - next[i].y
           const dist = Math.sqrt(dx * dx + dy * dy) || 1
@@ -245,10 +328,16 @@ export default function GraphView() {
           const force = (dist - idealDistance) * attractionStrength
           const fx = (dx / dist) * force
           const fy = (dy / dist) * force
-          source.vx += fx
-          source.vy += fy
-          target.vx -= fx
-          target.vy -= fy
+
+          // 只对非拖拽节点应用力
+          if (source.id !== draggingNodeId) {
+            source.vx += fx
+            source.vy += fy
+          }
+          if (target.id !== draggingNodeId) {
+            target.vx -= fx
+            target.vy -= fy
+          }
         }
       })
 
@@ -256,19 +345,23 @@ export default function GraphView() {
       const centerX = currentDimensions.width / 2
       const centerY = currentDimensions.height / 2
       next.forEach((n) => {
-        n.vx += (centerX - n.x) * centerGravity
-        n.vy += (centerY - n.y) * centerGravity
+        if (n.id !== draggingNodeId) {
+          n.vx += (centerX - n.x) * centerGravity
+          n.vy += (centerY - n.y) * centerGravity
+        }
       })
 
       // Apply velocity with damping (应用速度和阻尼)
       next.forEach((n) => {
-        n.vx *= damping
-        n.vy *= damping
-        n.x += n.vx
-        n.y += n.vy
-        n.x = Math.max(50, Math.min(currentDimensions.width - 50, n.x))
-        n.y = Math.max(50, Math.min(currentDimensions.height - 50, n.y))
-        totalVelocity += Math.abs(n.vx) + Math.abs(n.vy)
+        if (n.id !== draggingNodeId) {
+          n.vx *= damping
+          n.vy *= damping
+          n.x += n.vx
+          n.y += n.vy
+          n.x = Math.max(50, Math.min(currentDimensions.width - 50, n.x))
+          n.y = Math.max(50, Math.min(currentDimensions.height - 50, n.y))
+          totalVelocity += Math.abs(n.vx) + Math.abs(n.vy)
+        }
       })
 
       positionsRef.current = next
@@ -314,6 +407,39 @@ export default function GraphView() {
     [positions]
   )
 
+  // 开始拖拽节点
+  const handleNodeMouseDown = useCallback(
+    (e: React.MouseEvent, nodeId: string) => {
+      e.stopPropagation()
+      const pos = getPosition(nodeId)
+      dragStartPositionRef.current = { x: pos.x, y: pos.y }
+      setDragState({
+        isDragging: true,
+        nodeId,
+        startX: pos.x,
+        startY: pos.y,
+        offsetX: e.clientX - pos.x,
+        offsetY: e.clientY - pos.y,
+      })
+    },
+    [getPosition]
+  )
+
+  // 处理节点点击（区分拖拽和点击）
+  const handleNodeClick = useCallback(
+    (e: React.MouseEvent, node: KGNode) => {
+      e.stopPropagation()
+      const pos = getPosition(node.id)
+      const startPos = dragStartPositionRef.current
+      const hasMoved = startPos && (Math.abs(pos.x - startPos.x) > 5 || Math.abs(pos.y - startPos.y) > 5)
+
+      if (!hasMoved) {
+        setSelectedNode(node)
+      }
+    },
+    [getPosition]
+  )
+
   const getConnectedNodes = (nodeId: string) => {
     const connected = new Set<string>()
     edges.forEach((edge) => {
@@ -327,12 +453,13 @@ export default function GraphView() {
 
   // Refresh graph data
   const handleRefresh = async () => {
+    if (!selectedGraphId) return
     setIsLoading(true)
     setLoadError(null)
     try {
       const [entitiesData, relationsData] = await Promise.all([
-        kgApi.getEntities(500, 0),
-        kgApi.getRelations(500, 0),
+        kgApi.getEntities(selectedGraphId, 500, 0),
+        kgApi.getRelations(selectedGraphId, 500, 0),
       ])
 
       const transformedNodes = transformEntities(entitiesData.entities)
@@ -738,23 +865,28 @@ export default function GraphView() {
                   const isConnected = connectedToHovered.has(node.id)
                   const isDimmed = hoveredNode && !isHovered && !isConnected
                   const isSelected = selectedNode?.id === node.id
+                  const isDragging = dragState.nodeId === node.id
 
                   return (
                     <g
                       key={node.id}
                       transform={`translate(${pos.x}, ${pos.y})`}
-                      style={{ cursor: 'pointer', transition: 'opacity 0.2s ease' }}
+                      style={{
+                        cursor: dragState.isDragging ? 'grabbing' : 'grab',
+                        transition: 'opacity 0.2s ease'
+                      }}
                       opacity={isDimmed ? 0.2 : 1}
-                      onMouseEnter={() => setHoveredNode(node.id)}
-                      onMouseLeave={() => setHoveredNode(null)}
-                      onClick={() => setSelectedNode(node)}
-                      filter={isHovered || isSelected ? 'url(#glow)' : undefined}
+                      onMouseEnter={() => !dragState.isDragging && setHoveredNode(node.id)}
+                      onMouseLeave={() => !dragState.isDragging && setHoveredNode(null)}
+                      onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                      onClick={(e) => handleNodeClick(e, node)}
+                      filter={isHovered || isSelected || isDragging ? 'url(#glow)' : undefined}
                     >
                       <circle
-                        r={isHovered ? 28 : 24}
+                        r={isHovered || isDragging ? 28 : 24}
                         fill={colors.bg}
-                        stroke={isSelected ? '#00b4d8' : colors.border}
-                        strokeWidth={isSelected ? 3 : isHovered ? 2 : 1.5}
+                        stroke={isSelected || isDragging ? '#00b4d8' : colors.border}
+                        strokeWidth={isSelected || isDragging ? 3 : isHovered ? 2 : 1.5}
                         style={{ transition: 'all 0.2s ease' }}
                       />
                       <text
@@ -763,6 +895,7 @@ export default function GraphView() {
                         fill="#fff"
                         fontSize="10"
                         fontWeight="600"
+                        pointerEvents="none"
                       >
                         {node.label.length > 4 ? node.label.slice(0, 4) + '…' : node.label}
                       </text>
