@@ -117,10 +117,13 @@ export default function DocumentsView() {
       setIsLoading(true)
       const data = await documentsApi.list({ limit: 100 })
 
+      console.log('Fetched documents:', data.documents)
+      console.log('Available graphs:', graphs)
+
       const docs: KGDocument[] = data.documents.map((doc) => {
         // 查找关联的知识图谱名称
-        const graphId = (doc as { graph_id?: string }).graph_id
-        const graph = graphId ? graphs.find((g) => g.id === graphId) : undefined
+        const graph = doc.graph_id ? graphs.find((g) => g.id === doc.graph_id) : undefined
+        console.log(`Document ${doc.id}: graph_id=${doc.graph_id}, graph=`, graph)
         return {
           id: doc.id,
           name: doc.original_filename,
@@ -133,11 +136,12 @@ export default function DocumentsView() {
           taskId: doc.task_id,
           errorMessage: doc.error_message,
           filePath: doc.file_path,
-          graphId: graphId,
+          graphId: doc.graph_id,
           graphName: graph?.name,
         }
       })
 
+      console.log('Processed documents:', docs)
       setDocuments(docs)
 
       // 为处理中的文档订阅进度更新
@@ -190,7 +194,6 @@ export default function DocumentsView() {
 
   // 初始加载文档列表和知识图谱
   useEffect(() => {
-    fetchDocuments()
     fetchGraphs()
 
     // 清理函数：取消所有订阅
@@ -200,7 +203,7 @@ export default function DocumentsView() {
     }
   }, [])
 
-  // 当 graphs 加载完成后，重新获取文档列表以关联图谱名称
+  // 当 graphs 加载完成后，获取文档列表以关联图谱名称
   useEffect(() => {
     if (graphs.length > 0) {
       fetchDocuments()
@@ -260,6 +263,9 @@ export default function DocumentsView() {
       return
     }
 
+    // 获取当前选中的知识图谱信息
+    const currentGraph = graphs.find((g) => g.id === selectedGraphId)
+
     // 创建临时文档显示上传中状态
     const tempId = `temp-${Date.now()}-${Math.random()}`
     const tempDoc: KGDocument = {
@@ -271,6 +277,8 @@ export default function DocumentsView() {
       status: 'pending',
       progress: 0,
       uploadedAt: new Date().toISOString().split('T')[0],
+      graphId: selectedGraphId ?? undefined,
+      graphName: currentGraph?.name,
     }
 
     setDocuments((prev) => [tempDoc, ...prev])
@@ -581,12 +589,6 @@ export default function DocumentsView() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
-                        {doc.graphName && (
-                          <span className="shrink-0 px-2 py-0.5 text-xs rounded-md bg-[#00b4d8]/10 text-[#00b4d8] flex items-center gap-1">
-                            <Network className="w-3 h-3" />
-                            {doc.graphName}
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-[#64748b]">
                         <span>{doc.size}</span>
@@ -603,6 +605,14 @@ export default function DocumentsView() {
 
                     {/* Status */}
                     <div className="flex items-center gap-3 shrink-0">
+                      {/* Graph Name Badge */}
+                      {doc.graphName && (
+                        <span className="shrink-0 px-2 py-0.5 text-xs rounded-md bg-[#00b4d8]/10 text-[#00b4d8] flex items-center gap-1">
+                          <Network className="w-3 h-3" />
+                          {doc.graphName}
+                        </span>
+                      )}
+
                       {/* Start/Cancel Button - for pending or processing documents */}
                       {(doc.status === 'pending' || doc.status === 'error') && (
                         <motion.button

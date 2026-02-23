@@ -67,6 +67,7 @@ class DocumentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+    graph_id: Optional[str] = None
 
     class Config:
         from_attributes = True

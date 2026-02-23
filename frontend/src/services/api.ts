@@ -52,6 +52,7 @@ export const documentsApi = {
       created_at: string
       updated_at: string
       completed_at?: string
+      graph_id?: string
     }>
     total: number
   }> {
@@ -80,6 +81,7 @@ export const documentsApi = {
     created_at: string
     updated_at: string
     completed_at?: string
+    graph_id?: string
   }> {
     const response = await fetch(`${API_BASE}/documents/${id}`)
     if (!response.ok) throw new Error('获取文档详情失败')
