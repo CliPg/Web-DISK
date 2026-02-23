@@ -117,19 +117,26 @@ export default function DocumentsView() {
       setIsLoading(true)
       const data = await documentsApi.list({ limit: 100 })
 
-      const docs: KGDocument[] = data.documents.map((doc) => ({
-        id: doc.id,
-        name: doc.original_filename,
-        fileType: doc.filename.split('.').pop() as KGDocument['fileType'] || 'pdf',
-        size: `${(doc.file_size / 1024 / 1024).toFixed(1)} MB`,
-        pages: 0, // 后端暂未提供页数
-        status: mapBackendStatus(doc.status),
-        progress: 0,
-        uploadedAt: new Date(doc.created_at).toISOString().split('T')[0],
-        taskId: doc.task_id,
-        errorMessage: doc.error_message,
-        filePath: doc.file_path,
-      }))
+      const docs: KGDocument[] = data.documents.map((doc) => {
+        // 查找关联的知识图谱名称
+        const graphId = (doc as { graph_id?: string }).graph_id
+        const graph = graphId ? graphs.find((g) => g.id === graphId) : undefined
+        return {
+          id: doc.id,
+          name: doc.original_filename,
+          fileType: doc.filename.split('.').pop() as KGDocument['fileType'] || 'pdf',
+          size: `${(doc.file_size / 1024 / 1024).toFixed(1)} MB`,
+          pages: 0, // 后端暂未提供页数
+          status: mapBackendStatus(doc.status),
+          progress: 0,
+          uploadedAt: new Date(doc.created_at).toISOString().split('T')[0],
+          taskId: doc.task_id,
+          errorMessage: doc.error_message,
+          filePath: doc.file_path,
+          graphId: graphId,
+          graphName: graph?.name,
+        }
+      })
 
       setDocuments(docs)
 
@@ -191,7 +198,14 @@ export default function DocumentsView() {
       unsubscribeRefs.current.forEach((unsubscribe) => unsubscribe())
       unsubscribeRefs.current.clear()
     }
-  }, [fetchDocuments, fetchGraphs])
+  }, [])
+
+  // 当 graphs 加载完成后，重新获取文档列表以关联图谱名称
+  useEffect(() => {
+    if (graphs.length > 0) {
+      fetchDocuments()
+    }
+  }, [graphs])
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
@@ -264,7 +278,7 @@ export default function DocumentsView() {
 
     try {
       // 调用上传API，传递选中的知识图谱ID
-      const result = await documentsApi.upload(file, selectedGraphId)
+      const result = await documentsApi.upload(file, selectedGraphId ?? undefined)
 
       // 上传成功，更新文档信息并订阅任务进度
       setDocuments((prev) =>
@@ -565,7 +579,15 @@ export default function DocumentsView() {
 
                     {/* File Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[#f0f4f8] truncate mb-0.5">{doc.name}</h3>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
+                        {doc.graphName && (
+                          <span className="shrink-0 px-2 py-0.5 text-xs rounded-md bg-[#00b4d8]/10 text-[#00b4d8] flex items-center gap-1">
+                            <Network className="w-3 h-3" />
+                            {doc.graphName}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-[#64748b]">
                         <span>{doc.size}</span>
                         {doc.pages > 0 && (

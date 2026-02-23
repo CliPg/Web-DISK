@@ -27,6 +27,8 @@ export interface KGDocument {
   taskId?: string
   errorMessage?: string
   filePath?: string
+  graphId?: string
+  graphName?: string
 }
 
 export interface PipelineStage {
