@@ -416,130 +416,108 @@ export default function PipelineView() {
       {/* Two Column Layout */}
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-0">
         {/* Pipeline Stages */}
-        <div className="space-y-3 overflow-y-auto">
-          <h3 className="text-sm font-medium text-[#64748b]" style={{ marginBottom: '8px' }}>处理阶段</h3>
-          {stages.map((stage, index) => {
-            const config = stageStatusConfig[stage.status]
-            const StatusIcon = config.icon
-            const isExpanded = expandedStage === stage.id
-            const isActive = stage.status === 'running'
+        <div className="flex flex-col min-h-0">
+          <NeoCard className="flex-1 flex flex-col" variant="elevated" style={{ padding: '20px' }}>
+            <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
+              <div className="w-8 h-8 rounded-lg bg-[#00b4d8]/10 flex items-center justify-center" style={{ padding: '6px' }}>
+                <Loader2 className="w-4 h-4 text-[#00b4d8]" />
+              </div>
+              <h3 className="font-medium text-[#f0f4f8]">处理阶段</h3>
+            </div>
+            <div className="space-y-4 flex-1 overflow-y-auto">
+              {stages.map((stage, index) => {
+                const config = stageStatusConfig[stage.status]
+                const StatusIcon = config.icon
+                const isActive = stage.status === 'running'
 
-            return (
-              <motion.div
-                key={stage.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <NeoCard className={`overflow-hidden ${isActive ? 'ring-1 ring-[#00b4d8]/30' : ''}`}>
-                  {/* Stage Header */}
-                  <div
-                    className="flex items-center gap-3 cursor-pointer"
-                    style={{ padding: '16px' }}
-                    onClick={() => setExpandedStage(isExpanded ? null : stage.id)}
+                return (
+                  <motion.div
+                    key={stage.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.08 }}
                   >
-                    {/* Step Number & Status */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${config.bg}`} style={{ padding: '6px' }}>
-                        <StatusIcon
-                          className={`w-4 h-4 ${config.animate ? 'animate-spin' : ''}`}
-                          style={{ color: config.color }}
-                        />
-                      </div>
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium"
-                        style={{
-                          backgroundColor: stage.status === 'completed' ? config.color : '#1a2332',
-                          color: stage.status === 'completed' ? 'white' : '#64748b',
-                          border: stage.status !== 'completed' ? '1px solid #2a3548' : 'none',
-                        }}
-                      >
-                        {index + 1}
-                      </div>
-                    </div>
-
-                    {/* Stage Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[#f0f4f8] truncate">{stage.name}</h3>
-                      <p className="text-sm text-[#64748b] truncate">{stage.description}</p>
-                    </div>
-
-                    {/* Progress / Time */}
-                    <div className="text-right shrink-0">
-                      {stage.status === 'running' && (
-                        <span className="text-[#00b4d8] font-medium">{stage.progress}%</span>
-                      )}
-                      {stage.status === 'completed' && (
-                        <span className="text-sm text-[#00c853]">已完成</span>
-                      )}
-                      {stage.status === 'pending' && (
-                        <span className="text-sm text-[#64748b]">等待中</span>
-                      )}
-                    </div>
-
-                    {/* Expand Icon */}
-                    <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                      <ChevronDown className="w-5 h-5 text-[#64748b] shrink-0" />
-                    </motion.div>
-                  </div>
-
-                  {/* Progress Bar for Running Stage */}
-                  {stage.status === 'running' && (
-                    <div style={{ padding: '0 16px 12px' }}>
-                      <div className="h-1.5 neo-progress">
-                        <motion.div
-                          className="neo-progress-bar"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${stage.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Expanded Details */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="border-t border-[#2a3548] overflow-hidden"
-                      >
-                        <div className="bg-[#0a0e17]/50" style={{ padding: '16px' }}>
-                          <div className="grid grid-cols-3 gap-3" style={{ marginBottom: '12px' }}>
-                            <div>
-                              <p className="text-xs text-[#64748b]" style={{ marginBottom: '4px' }}>状态</p>
-                              <p className="text-sm font-medium" style={{ color: config.color }}>
-                                {config.text}
-                              </p>
-                            </div>
-                            {startTimeRef.current && (
-                              <div>
-                                <p className="text-xs text-[#64748b]" style={{ marginBottom: '4px' }}>已用时间</p>
-                                <p className="text-sm text-[#94a3b8]">{formatTime(elapsedTime)}</p>
-                              </div>
-                            )}
-                            {stage.status === 'completed' && (
-                              <div>
-                                <p className="text-xs text-[#64748b]" style={{ marginBottom: '4px' }}>状态</p>
-                                <p className="text-sm text-[#00c853]">已完成</p>
-                              </div>
-                            )}
-                          </div>
-                          {currentTask?.current_step && (
-                            <div className="rounded-lg bg-[#111827] border border-[#2a3548]" style={{ padding: '12px' }}>
-                              <p className="text-sm text-[#94a3b8]">{currentTask.current_step}</p>
-                            </div>
+                    <div className="flex items-start gap-4">
+                      {/* Step Indicator */}
+                      <div className="flex flex-col items-center shrink-0" style={{ width: '32px' }}>
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                            stage.status === 'completed' ? 'border-[#00c853] bg-[#00c853]/10' :
+                            stage.status === 'running' ? 'border-[#00b4d8] bg-[#00b4d8]/10' :
+                            'border-[#2a3548] bg-[#1a2332]'
+                          }`}
+                        >
+                          {stage.status === 'completed' ? (
+                            <CheckCircle2 className="w-4 h-4 text-[#00c853]" />
+                          ) : stage.status === 'running' ? (
+                            <StatusIcon className={`w-4 h-4 text-[#00b4d8] ${config.animate ? 'animate-spin' : ''}`} style={{ color: config.color }} />
+                          ) : (
+                            <span className="text-xs font-medium text-[#64748b]">{index + 1}</span>
                           )}
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </NeoCard>
-              </motion.div>
-            )
-          })}
+                        {index < stages.length - 1 && (
+                          <div
+                            className={`flex-1 w-0.5 ${
+                              stage.status === 'completed' ? 'bg-[#00c853]' : 'bg-[#2a3548]'
+                            }`}
+                            style={{ marginTop: '8px', minHeight: '24px' }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Stage Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <h4 className={`font-medium ${isActive ? 'text-[#00b4d8]' : 'text-[#f0f4f8]'}`}>
+                              {stage.name}
+                            </h4>
+                            <p className="text-sm text-[#64748b]">{stage.description}</p>
+                          </div>
+                          {stage.status === 'running' && (
+                            <span className="text-sm font-medium text-[#00b4d8]">{stage.progress}%</span>
+                          )}
+                          {stage.status === 'completed' && (
+                            <span className="text-xs text-[#00c853]">已完成</span>
+                          )}
+                        </div>
+
+                        {/* Progress Bar for Running Stage */}
+                        {stage.status === 'running' && (
+                          <div className="h-1.5 neo-progress">
+                            <motion.div
+                              className="neo-progress-bar"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${stage.progress}%` }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Current Step Message */}
+                        {isActive && currentTask?.current_step && (
+                          <div className="mt-2 p-2 rounded bg-[#0a0e17] border border-[#2a3548]">
+                            <p className="text-xs text-[#94a3b8]">{currentTask.current_step}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              )}
+            </div>
+
+            {/* Overall Stats */}
+            <div className="mt-6 pt-4 border-t border-[#2a3548]">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#64748b]" />
+                  <span className="text-sm text-[#64748b]">总用时</span>
+                </div>
+                <span className="text-sm font-mono text-[#f0f4f8]">{formatTime(elapsedTime)}</span>
+              </div>
+            </div>
+          </NeoCard>
         </div>
 
         {/* Activity Log */}
