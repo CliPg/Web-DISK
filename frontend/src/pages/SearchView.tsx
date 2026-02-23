@@ -65,24 +65,25 @@ export default function SearchView() {
       : results.filter((r) => r.type === activeFilter)
 
   return (
-    <div className="h-full flex flex-col gap-6 max-w-4xl mx-auto">
+    <div className="h-full flex flex-col gap-6 mx-auto" style={{ maxWidth: '900px' }}>
       {/* Header */}
-      <div className="text-center pt-4">
+      <div className="text-center" style={{ paddingTop: '16px' }}>
         <motion.div
-          className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#0096c7] mb-4 shadow-lg"
+          className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#0096c7] shadow-lg"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
+          style={{ padding: '8px', marginBottom: '16px' }}
         >
           <Sparkles className="w-7 h-7 text-white" />
         </motion.div>
-        <h1 className="text-2xl font-semibold text-[#f0f4f8] mb-1">知识搜索</h1>
+        <h1 className="text-2xl font-semibold text-[#f0f4f8]" style={{ marginBottom: '4px' }}>知识搜索</h1>
         <p className="text-[#64748b] text-sm">搜索图谱中的实体、关系或文档</p>
       </div>
 
       {/* Search Bar */}
-      <NeoCard className="p-2" variant="elevated">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 flex items-center gap-3 px-4">
+      <NeoCard variant="elevated" style={{ padding: '12px' }}>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 flex items-center gap-3" style={{ padding: '0 12px' }}>
             <Search className="w-5 h-5 text-[#64748b] shrink-0" />
             <input
               type="text"
@@ -99,6 +100,7 @@ export default function SearchView() {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 className="w-6 h-6 rounded-full bg-[#2a3548] flex items-center justify-center text-[#94a3b8] hover:bg-[#3b4a61] hover:text-[#f0f4f8] shrink-0"
+                style={{ padding: '4px' }}
                 onClick={() => {
                   setQuery('')
                   setResults([])
@@ -110,7 +112,8 @@ export default function SearchView() {
             )}
           </div>
           <motion.button
-            className="px-6 py-3 neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2.5 shrink-0"
+            className="neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2 shrink-0"
+            style={{ padding: '12px 16px' }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleSearch(query)}
@@ -129,15 +132,16 @@ export default function SearchView() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
               <Clock className="w-4 h-4 text-[#64748b]" />
               <span className="text-sm text-[#64748b]">最近搜索</span>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {recentSearches.map((term) => (
                 <motion.button
                   key={term}
-                  className="px-4 py-2 neo-card rounded-lg text-sm text-[#94a3b8] hover:text-[#f0f4f8] hover:border-[#3b4a61]"
+                  className="neo-card rounded-lg text-sm text-[#94a3b8] hover:text-[#f0f4f8] hover:border-[#3b4a61]"
+                  style={{ padding: '8px 12px' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
@@ -166,11 +170,12 @@ export default function SearchView() {
               {typeFilters.map((filter) => (
                 <motion.button
                   key={filter.value}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`rounded-lg text-sm font-medium transition-colors ${
                     activeFilter === filter.value
                       ? 'bg-[#00b4d8] text-white'
                       : 'text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8]'
                   }`}
+                  style={{ padding: '8px 12px' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setActiveFilter(filter.value)}
@@ -186,7 +191,7 @@ export default function SearchView() {
 
       {/* Loading State */}
       {isSearching && (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center" style={{ padding: '48px 0' }}>
           <motion.div
             className="w-10 h-10 border-3 border-[#00b4d8] border-t-transparent rounded-full"
             animate={{ rotate: 360 }}
@@ -198,7 +203,7 @@ export default function SearchView() {
       {/* Results */}
       <AnimatePresence mode="popLayout">
         {!isSearching && filteredResults.length > 0 && (
-          <motion.div className="space-y-3 flex-1 overflow-y-auto pb-4">
+          <motion.div className="space-y-3 flex-1 overflow-y-auto" style={{ paddingBottom: '16px' }}>
             {filteredResults.map((result, index) => {
               const Icon = typeIcons[result.type]
               const color = typeColors[result.type]
@@ -211,12 +216,12 @@ export default function SearchView() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.04 }}
                 >
-                  <NeoCard className="p-4 cursor-pointer group" hover>
+                  <NeoCard className="cursor-pointer group" hover style={{ padding: '16px' }}>
                     <div className="flex items-start gap-4">
                       {/* Type Icon */}
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: color + '20' }}
+                        style={{ backgroundColor: color + '20', padding: '8px' }}
                       >
                         <Icon className="w-5 h-5" style={{ color }} />
                       </div>
@@ -226,13 +231,13 @@ export default function SearchView() {
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-medium text-[#f0f4f8]">{result.title}</h3>
                           <span
-                            className="px-2 py-0.5 rounded-md text-xs font-medium text-white shrink-0"
-                            style={{ backgroundColor: color }}
+                            className="rounded-md text-xs font-medium text-white shrink-0"
+                            style={{ backgroundColor: color, padding: '2px 8px' }}
                           >
                             {result.type === 'entity' ? '实体' : result.type === 'relation' ? '关系' : '文档'}
                           </span>
                         </div>
-                        <p className="text-sm text-[#94a3b8] line-clamp-2 mb-2">{result.description}</p>
+                        <p className="text-sm text-[#94a3b8] line-clamp-2" style={{ marginBottom: '8px' }}>{result.description}</p>
 
                         {/* Metadata */}
                         {result.metadata && (
@@ -275,13 +280,14 @@ export default function SearchView() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-16"
+          className="text-center"
+          style={{ padding: '64px 0' }}
         >
-          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mx-auto mb-4 border border-[#2a3548]">
+          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mx-auto border border-[#2a3548]" style={{ padding: '12px', marginBottom: '16px' }}>
             <Search className="w-8 h-8 text-[#64748b]" />
           </div>
           <p className="text-[#94a3b8]">未找到与 "{query}" 相关的结果</p>
-          <p className="text-sm text-[#64748b] mt-1">尝试使用其他关键词搜索</p>
+          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>尝试使用其他关键词搜索</p>
         </motion.div>
       )}
     </div>
