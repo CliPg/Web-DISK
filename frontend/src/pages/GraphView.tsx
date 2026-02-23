@@ -854,13 +854,17 @@ export default function GraphView() {
               style={{ cursor: isCanvasDragging ? 'grabbing' : 'grab' }}
               onMouseDown={handleCanvasMouseDown}
             >
-              <g
-                style={{
-                  transform: `translate(${canvasState.panX}px, ${canvasState.panY}px) scale(${zoom})`,
-                  transformOrigin: 'center',
-                }}
-              >
+              {/* 无限背景网格 - 使用 patternTransform 实现无限滚动 */}
               <defs>
+                <pattern
+                  id="grid"
+                  width="40"
+                  height="40"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform={`translate(${canvasState.panX % 40}, ${canvasState.panY % 40})`}
+                >
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2332" strokeWidth="0.5" />
+                </pattern>
                 <marker
                   id="arrowhead"
                   markerWidth="10"
@@ -890,13 +894,14 @@ export default function GraphView() {
                   </feMerge>
                 </filter>
               </defs>
-
-              {/* Grid pattern */}
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1a2332" strokeWidth="0.5" />
-              </pattern>
               <rect width="100%" height="100%" fill="url(#grid)" />
 
+              <g
+                style={{
+                  transform: `translate(${canvasState.panX}px, ${canvasState.panY}px) scale(${zoom})`,
+                  transformOrigin: 'center',
+                }}
+              >
               {/* Edges */}
               <g>
                 {edges.map((edge) => {
