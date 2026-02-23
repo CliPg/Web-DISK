@@ -93,6 +93,7 @@ export default function DocumentsView() {
   const [selectedDoc, setSelectedDoc] = useState<KGDocument | null>(null)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<string>('all')
+  const [currentTime, setCurrentTime] = useState(Date.now())  // 用于实时更新构建耗时
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 存储任务取消订阅的函数
@@ -116,6 +117,50 @@ export default function DocumentsView() {
     await fetchGraphs()
   }, [fetchGraphs])
 
+  // 计算构建耗时
+  const calculateBuildTime = useCallback((taskStartedAt: string | undefined, taskCompletedAt: string | undefined, status: KGDocument['status']): string => {
+    console.log('calculateBuildTime called:', { taskStartedAt, taskCompletedAt, status, currentTime })
+
+    // 只有任务开始处理后才计算耗时
+    if (!taskStartedAt) return '--'
+    if (status === 'pending') return '--'
+
+    const start = new Date(taskStartedAt)
+    console.log('start date:', start, 'getTime():', start.getTime(), 'isNaN:', isNaN(start.getTime()))
+
+    // 检查日期是否有效
+    if (isNaN(start.getTime())) {
+      console.error('Invalid taskStartedAt:', taskStartedAt)
+      return '--'
+    }
+
+    // 对于已完成的任务，使用完成时间；对于处理中的任务，使用当前时间
+    const end = taskCompletedAt ? new Date(taskCompletedAt) : new Date(currentTime)
+    console.log('end date:', end, 'getTime():', end.getTime())
+
+    if (taskCompletedAt && isNaN(end.getTime())) {
+      console.error('Invalid taskCompletedAt:', taskCompletedAt)
+      return '--'
+    }
+
+    const diffMs = end.getTime() - start.getTime()
+    console.log('diffMs:', diffMs)
+
+    // 如果差值小于0，返回 --
+    if (diffMs < 0) return '--'
+
+    const diffSecs = Math.floor(diffMs / 1000)
+    const diffMins = Math.floor(diffSecs / 60)
+
+    console.log('result:', { diffSecs, diffMins, formatted: diffMins > 0 ? `${diffMins}分${diffSecs % 60}秒` : `${diffSecs}秒` })
+
+    if (diffMins > 0) {
+      return `${diffMins}分${diffSecs % 60}秒`
+    } else {
+      return `${diffSecs}秒`
+    }
+  }, [currentTime])
+
   // 加载文档列表（依赖于 graphs 数据）
   const fetchDocuments = useCallback(async () => {
     // 确保 graphs 已经加载完成
@@ -133,7 +178,6 @@ export default function DocumentsView() {
       const docs: KGDocument[] = data.documents.map((doc) => {
         // 查找关联的知识图谱名称
         const graph = doc.graph_id ? graphs.find((g) => g.id === doc.graph_id) : undefined
-        console.log(`Document ${doc.id}: graph_id=${doc.graph_id}, graph=`, graph)
         return {
           id: doc.id,
           name: doc.original_filename,
@@ -148,6 +192,8 @@ export default function DocumentsView() {
           filePath: doc.file_path,
           graphId: doc.graph_id,
           graphName: graph?.name,
+          taskStartedAt: doc.task_started_at,
+          taskCompletedAt: doc.task_completed_at,
         }
       })
 
@@ -234,6 +280,15 @@ export default function DocumentsView() {
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [graphDropdownOpen])
+
+  // 每秒更新当前时间，用于实时计算处理中文档的构建耗时
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -609,7 +664,7 @@ export default function DocumentsView() {
                           </>
                         )}
                         <span>·</span>
-                        <span>{doc.uploadedAt}</span>
+                        <span>构建耗时: {calculateBuildTime(doc.taskStartedAt, doc.taskCompletedAt, doc.status)}</span>
                       </div>
                     </div>
 

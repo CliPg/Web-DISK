@@ -137,11 +137,29 @@ async def list_documents(
     # 获取每个文档的最新任务
     result = []
     for doc in documents:
-        doc_dict = DocumentResponse.model_validate(doc).model_dump()
         # 获取最新任务
-        latest_task = db.query(DBTask).filter(DBTask.document_id == doc.id).first()
+        latest_task = db.query(DBTask).filter(DBTask.document_id == doc.id).order_by(DBTask.created_at.desc()).first()
+
         if latest_task:
-            doc_dict["task_id"] = latest_task.id
+            logger.info(f"Document {doc.id}: task.started_at={latest_task.started_at}, task.status={latest_task.status}")
+
+        # 直接构造响应字典
+        doc_dict = {
+            "id": doc.id,
+            "filename": doc.filename,
+            "original_filename": doc.original_filename,
+            "file_path": doc.file_path,
+            "file_size": doc.file_size,
+            "status": doc.status,
+            "task_id": latest_task.id if latest_task else None,
+            "error_message": latest_task.error_message if latest_task else None,
+            "created_at": doc.created_at,
+            "updated_at": doc.updated_at,
+            "completed_at": doc.completed_at,
+            "graph_id": doc.graph_id,
+            "task_started_at": latest_task.started_at.isoformat() if latest_task and latest_task.started_at else None,
+            "task_completed_at": latest_task.completed_at.isoformat() if latest_task and latest_task.completed_at else None,
+        }
         result.append(DocumentResponse(**doc_dict))
 
     return DocumentListResponse(documents=result, total=total)
@@ -155,10 +173,25 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
     if not document:
         raise HTTPException(status_code=404, detail="文档不存在")
 
-    doc_dict = DocumentResponse.model_validate(document).model_dump()
-    latest_task = db.query(DBTask).filter(DBTask.document_id == document_id).first()
-    if latest_task:
-        doc_dict["task_id"] = latest_task.id
+    latest_task = db.query(DBTask).filter(DBTask.document_id == document_id).order_by(DBTask.created_at.desc()).first()
+
+    # 直接构造响应字典
+    doc_dict = {
+        "id": document.id,
+        "filename": document.filename,
+        "original_filename": document.original_filename,
+        "file_path": document.file_path,
+        "file_size": document.file_size,
+        "status": document.status,
+        "task_id": latest_task.id if latest_task else None,
+        "error_message": latest_task.error_message if latest_task else None,
+        "created_at": document.created_at,
+        "updated_at": document.updated_at,
+        "completed_at": document.completed_at,
+        "graph_id": document.graph_id,
+        "task_started_at": latest_task.started_at.isoformat() if latest_task and latest_task.started_at else None,
+        "task_completed_at": latest_task.completed_at.isoformat() if latest_task and latest_task.completed_at else None,
+    }
 
     return DocumentResponse(**doc_dict)
 
@@ -218,17 +251,21 @@ async def start_processing(document_id: str, db: Session = Depends(get_db)):
 
     # 提交Celery任务
     try:
+        from datetime import datetime
         celery_task = process_document.delay(
             document_id=document.id,
             file_path=document.file_path,
             task_id=task.id,
         )
-        # 更新Celery任务ID
+        # 更新Celery任务ID和开始时间
         task.celery_task_id = celery_task.id
         task.status = TaskStatus.PROCESSING
+        task.started_at = datetime.utcnow()
         task.current_step="任务已提交"
         task.message="开始处理文档..."
         db.commit()
+
+        logger.info(f"Task started: task_id={task.id}, started_at={task.started_at}")
 
         # 更新文档状态
         document.status = DocumentStatus.PROCESSING

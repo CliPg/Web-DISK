@@ -53,6 +53,8 @@ export const documentsApi = {
       updated_at: string
       completed_at?: string
       graph_id?: string
+      task_started_at?: string
+      task_completed_at?: string
     }>
     total: number
   }> {
@@ -134,6 +136,7 @@ export const tasksApi = {
     message: string
     error_message?: string
     created_at: string
+    started_at?: string
     updated_at: string
     completed_at?: string
   }> {

@@ -29,6 +29,9 @@ export interface KGDocument {
   filePath?: string
   graphId?: string
   graphName?: string
+  // 任务时间信息（用于计算构建耗时）
+  taskStartedAt?: string
+  taskCompletedAt?: string
 }
 
 export interface PipelineStage {

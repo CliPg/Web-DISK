@@ -68,9 +68,12 @@ class DocumentResponse(BaseModel):
     updated_at: datetime
     completed_at: Optional[datetime] = None
     graph_id: Optional[str] = None
+    # 任务时间信息
+    task_started_at: Optional[str] = None  # 改为字符串类型，直接使用 ISO 格式
+    task_completed_at: Optional[str] = None  # 改为字符串类型，直接使用 ISO 格式
 
     class Config:
-        from_attributes = True
+        from_attributes = False  # 禁用 from_attributes，因为我们手动构造数据
 
 
 class DocumentListResponse(BaseModel):
@@ -104,6 +107,7 @@ class TaskResponse(BaseModel):
     entities_count: int = 0  # 已提取的实体数
     relations_count: int = 0  # 已提取的关系数
     created_at: datetime
+    started_at: Optional[datetime] = None
     updated_at: datetime
     completed_at: Optional[datetime] = None
 

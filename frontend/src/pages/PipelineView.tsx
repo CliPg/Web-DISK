@@ -119,8 +119,9 @@ export default function PipelineView() {
     try {
       setIsLoading(true)
       const data = await documentsApi.list({ limit: 50 })
+      // 只显示正在处理的文档，不显示 pending 状态的文档
       const processingDocs = data.documents.filter(
-        (d) => d.status === 'processing' || d.status === 'pending'
+        (d) => d.status === 'processing'
       )
       console.log(`[PipelineView] Processing docs:`, processingDocs.length, processingDocs.map(d => ({ id: d.id, status: d.status })))
       setDocuments(processingDocs)
@@ -128,7 +129,7 @@ export default function PipelineView() {
       // 自动选择第一个处理中的文档（仅当没有选中文档时）
       // 使用 ref 检查，避免闭包问题
       if (processingDocs.length > 0 && !selectedDocIdRef.current) {
-        const doc = processingDocs.find((d) => d.status === 'processing') || processingDocs[0]
+        const doc = processingDocs[0]
         if (doc) {
           console.log(`[PipelineView] Auto-selecting doc:`, doc.id)
           selectedDocIdRef.current = doc.id
@@ -186,9 +187,17 @@ export default function PipelineView() {
       const task = await tasksApi.get(taskId)
       setCurrentTask(task)
 
-      // 设置开始时间
+      // 设置开始时间 - 优先使用 started_at（实际开始处理的时间），不存在则使用 created_at
+      const startTime = task.started_at || task.created_at
       if (task.status === 'processing' || task.status === 'pending') {
-        startTimeRef.current = new Date(task.created_at)
+        // 后端返回的是 UTC 时间但没有时区标记（如 "2026-02-23T02:00:00"），
+        // JS 的 new Date() 会将其当作本地时间解析，导致时区偏差。
+        // 需要补上 'Z' 后缀确保按 UTC 解析。
+        const utcTimeStr = startTime.endsWith('Z') || startTime.includes('+') || startTime.includes('-', 10)
+          ? startTime
+          : startTime + 'Z'
+        startTimeRef.current = new Date(utcTimeStr)
+        console.log(`[PipelineView] Task start time set to:`, startTimeRef.current, `started_at:`, task.started_at)
         // 启动计时器
         timerRef.current = setInterval(() => {
           if (startTimeRef.current) {

@@ -24,7 +24,14 @@ async def get_task(task_id: str, db: Session = Depends(get_db)):
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
 
-    return TaskResponse.model_validate(task)
+    # 对于处理中但没有 started_at 的旧任务，使用 created_at 作为 started_at
+    # 这样可以避免计时从很久以前开始
+    response = TaskResponse.model_validate(task)
+    if task.status == TaskStatus.PROCESSING and not task.started_at:
+        # 不修改数据库，只在响应中提供
+        pass  # 前端会回退使用 created_at
+
+    return response
 
 
 @router.get("/{task_id}/stream")

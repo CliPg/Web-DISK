@@ -73,6 +73,7 @@ class Task(Base):
     relations_count = Column(Integer, default=0)  # 已提取的关系数
 
     created_at = Column(DateTime, server_default=func.now())
+    started_at = Column(DateTime, nullable=True)  # 实际开始处理的时间
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     completed_at = Column(DateTime, nullable=True)
 
