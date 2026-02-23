@@ -65,7 +65,7 @@ export default function SearchView() {
       : results.filter((r) => r.type === activeFilter)
 
   return (
-    <div className="h-full flex flex-col gap-6" style={{ maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+    <div className="h-full flex flex-col gap-6" style={{ maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto' }}>
       {/* Header */}
       <div className="text-center" style={{ paddingTop: '16px' }}>
         <motion.div
@@ -81,10 +81,10 @@ export default function SearchView() {
       </div>
 
       {/* Search Bar */}
-      <NeoCard variant="elevated" style={{ padding: '12px' }}>
+      <NeoCard variant="elevated" style={{ padding: '2px' }}>
         <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center gap-3" style={{ padding: '0 12px' }}>
-            <Search className="w-5 h-5 text-[#64748b] shrink-0" />
+          <div className="flex items-center gap-3" style={{ padding: '0 12px', flex: 1 }}>
+            <Search className="w-4 h-4 text-[#64748b] shrink-0" />
             <input
               type="text"
               value={query}
@@ -93,7 +93,8 @@ export default function SearchView() {
                 handleSearch(e.target.value)
               }}
               placeholder="输入关键词搜索..."
-              className="flex-1 py-3 bg-transparent outline-none text-[#f0f4f8] placeholder:text-[#64748b] min-w-0"
+              className="flex-1 bg-transparent outline-none text-[#f0f4f8] placeholder:text-[#64748b] min-w-0"
+              style={{ paddingTop: '8px', paddingBottom: '8px', fontSize: '14px' }}
             />
             {query && (
               <motion.button
@@ -113,7 +114,7 @@ export default function SearchView() {
           </div>
           <motion.button
             className="neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2 shrink-0"
-            style={{ padding: '12px 16px' }}
+            style={{ padding: '4px 12px' }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleSearch(query)}
