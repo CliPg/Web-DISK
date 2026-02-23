@@ -23,6 +23,11 @@ interface DragState {
   offsetY: number
 }
 
+interface CanvasState {
+  panX: number
+  panY: number
+}
+
 const nodeColors: Record<KGNode['type'], { bg: string; border: string; glow: string }> = {
   concept:     { bg: '#3b82f6', border: '#60a5fa', glow: 'rgba(59, 130, 246, 0.4)' },
   technology:  { bg: '#22c55e', border: '#4ade80', glow: 'rgba(34, 197, 94, 0.4)' },
@@ -108,6 +113,15 @@ export default function GraphView() {
   const dragStateRef = useRef<DragState>(dragState)
   const dragStartPositionRef = useRef<{ x: number; y: number } | null>(null)
 
+  // 画布平移状态
+  const [canvasState, setCanvasState] = useState<CanvasState>({
+    panX: 0,
+    panY: 0,
+  })
+  const canvasStateRef = useRef<CanvasState>(canvasState)
+  const [isCanvasDragging, setIsCanvasDragging] = useState(false)
+  const canvasDragStartRef = useRef<{ x: number; y: number } | null>(null)
+
   // 知识图谱选择相关状态
   const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
   const [selectedGraphId, setSelectedGraphId] = useState<string | null>(null)
@@ -153,6 +167,11 @@ export default function GraphView() {
     dragStateRef.current = dragState
   }, [dragState])
 
+  // 同步画布状态到 ref
+  useEffect(() => {
+    canvasStateRef.current = canvasState
+  }, [canvasState])
+
   // 处理拖拽的鼠标移动事件
   useEffect(() => {
     if (!dragState.isDragging) return
@@ -192,6 +211,40 @@ export default function GraphView() {
       document.removeEventListener('mouseup', handleMouseUp)
     }
   }, [dragState.isDragging])
+
+  // 处理画布拖拽
+  useEffect(() => {
+    if (!isCanvasDragging) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const startPos = canvasDragStartRef.current
+      if (!startPos) return
+
+      const deltaX = e.clientX - startPos.x
+      const deltaY = e.clientY - startPos.y
+
+      setCanvasState((prev) => ({
+        panX: prev.panX + deltaX,
+        panY: prev.panY + deltaY,
+      }))
+
+      // 更新起始位置
+      canvasDragStartRef.current = { x: e.clientX, y: e.clientY }
+    }
+
+    const handleMouseUp = () => {
+      setIsCanvasDragging(false)
+      canvasDragStartRef.current = null
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isCanvasDragging])
 
   // Load knowledge graph data when selected graph changes
   useEffect(() => {
@@ -439,6 +492,26 @@ export default function GraphView() {
     },
     [getPosition]
   )
+
+  // 画布鼠标按下事件
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    // 只在左键点击时响应
+    if (e.button !== 0) return
+    // 如果正在拖拽节点，不触发画布拖拽
+    if (dragState.isDragging) return
+    // 检查点击的是否是节点
+    const target = e.target as SVGElement
+    if (target.closest('g[data-node]')) return
+
+    setIsCanvasDragging(true)
+    canvasDragStartRef.current = { x: e.clientX, y: e.clientY }
+  }, [dragState.isDragging])
+
+  // 重置画布位置
+  const handleResetCanvas = useCallback(() => {
+    setCanvasState({ panX: 0, panY: 0 })
+    setZoom(1)
+  }, [])
 
   const getConnectedNodes = (nodeId: string) => {
     const connected = new Set<string>()
@@ -757,7 +830,8 @@ export default function GraphView() {
               className="w-9 h-9 neo-btn-secondary flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setZoom(1)}
+              onClick={handleResetCanvas}
+              title="重置视图"
             >
               <Maximize2 className="w-4 h-4 text-[#94a3b8]" />
             </motion.button>
@@ -773,12 +847,19 @@ export default function GraphView() {
           </div>
 
           {/* SVG Canvas */}
-          <div ref={containerRef} className="w-full h-full bg-[#0a0e17]">
+          <div ref={containerRef} className="w-full h-full bg-[#0a0e17] overflow-hidden">
             <svg
               width="100%"
               height="100%"
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}
+              style={{ cursor: isCanvasDragging ? 'grabbing' : 'grab' }}
+              onMouseDown={handleCanvasMouseDown}
             >
+              <g
+                style={{
+                  transform: `translate(${canvasState.panX}px, ${canvasState.panY}px) scale(${zoom})`,
+                  transformOrigin: 'center',
+                }}
+              >
               <defs>
                 <marker
                   id="arrowhead"
@@ -870,6 +951,7 @@ export default function GraphView() {
                   return (
                     <g
                       key={node.id}
+                      data-node
                       transform={`translate(${pos.x}, ${pos.y})`}
                       style={{
                         cursor: dragState.isDragging ? 'grabbing' : 'grab',
@@ -902,6 +984,7 @@ export default function GraphView() {
                     </g>
                   )
                 })}
+              </g>
               </g>
             </svg>
           </div>
