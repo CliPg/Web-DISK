@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useSelectedGraph } from '../hooks/useSelectedGraph'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Upload,
@@ -85,7 +86,6 @@ const mapBackendStatus = (status: string): KGDocument['status'] => {
 export default function DocumentsView() {
   const [documents, setDocuments] = useState<KGDocument[]>([])
   const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
-  const [selectedGraphId, setSelectedGraphId] = useState<string>('default')
   const [graphDropdownOpen, setGraphDropdownOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
@@ -98,18 +98,14 @@ export default function DocumentsView() {
   // 存储任务取消订阅的函数
   const unsubscribeRefs = useRef<Map<string, () => void>>(new Map())
 
+  // 使用持久化的选择 hook
+  const { selectedGraphId, setSelectedGraphId } = useSelectedGraph(graphs)
+
   // 加载知识图谱列表
   const fetchGraphs = useCallback(async () => {
     try {
       const data = await graphsApi.list()
       setGraphs(data.graphs)
-      // 如果有默认图谱，自动选中
-      const defaultGraph = data.graphs.find((g) => g.is_default)
-      if (defaultGraph) {
-        setSelectedGraphId(defaultGraph.id)
-      } else if (data.graphs.length > 0) {
-        setSelectedGraphId(data.graphs[0].id)
-      }
     } catch (error) {
       console.error('Failed to fetch graphs:', error)
     }

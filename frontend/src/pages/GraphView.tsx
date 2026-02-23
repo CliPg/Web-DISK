@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useSelectedGraph } from '../hooks/useSelectedGraph'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ZoomIn, ZoomOut, Maximize2, X, Info, Link2, Layers, Download, RefreshCw, FileJson, Image as ImageIcon, ChevronDown, Network } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
@@ -124,8 +125,10 @@ export default function GraphView() {
 
   // 知识图谱选择相关状态
   const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
-  const [selectedGraphId, setSelectedGraphId] = useState<string | null>(null)
   const [graphDropdownOpen, setGraphDropdownOpen] = useState(false)
+
+  // 使用持久化的选择 hook
+  const { selectedGraphId, setSelectedGraphId } = useSelectedGraph(graphs)
 
   // 加载知识图谱列表
   useEffect(() => {
@@ -133,13 +136,6 @@ export default function GraphView() {
       try {
         const data = await graphsApi.list()
         setGraphs(data.graphs)
-        // 默认选中默认图谱
-        const defaultGraph = data.graphs.find((g) => g.is_default)
-        if (defaultGraph) {
-          setSelectedGraphId(defaultGraph.id)
-        } else if (data.graphs.length > 0) {
-          setSelectedGraphId(data.graphs[0].id)
-        }
       } catch (error) {
         console.error('Failed to load graphs:', error)
       }
@@ -659,24 +655,23 @@ export default function GraphView() {
         {/* Legend and Actions */}
         <div className="flex items-center gap-4">
           {/* Graph Selector */}
-          {graphs.length > 0 && (
-            <div className="relative graph-selector">
-              <motion.button
-                className="flex items-center gap-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
-                style={{ padding: '6px 10px' }}
-                onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
-                    <Network className="w-3 h-3 text-[#00b4d8]" />
-                  </div>
-                  <span className="text-[#f0f4f8] truncate max-w-[120px]">
-                    {graphs.find((g) => g.id === selectedGraphId)?.name || '选择知识图谱'}
-                  </span>
+          <div className="relative graph-selector">
+            <motion.button
+              className="flex items-center gap-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
+              style={{ padding: '6px 10px' }}
+              onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
+                  <Network className="w-3 h-3 text-[#00b4d8]" />
                 </div>
-                <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
-              </motion.button>
+                <span className="text-[#f0f4f8] truncate max-w-[120px]">
+                  {graphs.find((g) => g.id === selectedGraphId)?.name || '加载中...'}
+                </span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+            </motion.button>
 
               <AnimatePresence>
                 {graphDropdownOpen && (
@@ -713,7 +708,6 @@ export default function GraphView() {
                 )}
               </AnimatePresence>
             </div>
-          )}
 
           {/* Export Buttons */}
           <div className="flex items-center gap-2">
