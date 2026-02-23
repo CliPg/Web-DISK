@@ -394,13 +394,14 @@ export default function GraphsView() {
             onClick={closeModal}
           >
             <motion.div
-              className="neo-card-elevated p-6 w-full max-w-md"
+              className="neo-card-elevated w-full max-w-md"
+              style={{ padding: '18px' }}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
                 <h2 className="text-lg font-semibold text-[#f0f4f8]">新建知识图谱</h2>
                 <motion.button
                   className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
@@ -412,31 +413,33 @@ export default function GraphsView() {
                 </motion.button>
               </div>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+              <div style={{ marginBottom: '2px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
                     名称 <span className="text-[#f44336]">*</span>
                   </label>
                   <input
                     type="text"
-                    className={`w-full px-4 py-2.5 neo-input text-sm ${
+                    className={`w-full neo-input text-sm ${
                       formErrors.name ? 'border-[#f44336]' : ''
                     }`}
+                    style={{ padding: '12px 16px' }}
                     placeholder="输入知识图谱名称"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     maxLength={50}
                   />
                   {formErrors.name && (
-                    <p className="text-xs text-[#f44336] mt-1">{formErrors.name}</p>
+                    <p className="text-xs text-[#f44336]" style={{ marginTop: '8px' }}>{formErrors.name}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
                     描述
                   </label>
                   <textarea
-                    className="w-full px-4 py-2.5 neo-input text-sm resize-none"
+                    className="w-full neo-input text-sm resize-none"
+                    style={{ padding: '12px 16px' }}
                     placeholder="输入知识图谱描述（可选）"
                     rows={3}
                     value={formData.description}
@@ -446,9 +449,10 @@ export default function GraphsView() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3" style={{ paddingTop: '8px' }}>
                 <motion.button
-                  className="flex-1 px-4 py-2.5 neo-btn-secondary rounded-lg font-medium text-sm"
+                  className="flex-1 neo-btn-secondary rounded-lg font-medium text-sm"
+                  style={{ padding: '12px 16px' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={closeModal}
@@ -457,7 +461,8 @@ export default function GraphsView() {
                   取消
                 </motion.button>
                 <motion.button
-                  className="flex-1 px-4 py-2.5 neo-btn-primary rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  className="flex-1 neo-btn-primary rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  style={{ padding: '12px 16px' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleCreate}
@@ -492,13 +497,14 @@ export default function GraphsView() {
             onClick={closeModal}
           >
             <motion.div
-              className="neo-card-elevated p-6 w-full max-w-md"
+              className="neo-card-elevated w-full max-w-md"
+              style={{ padding: '32px' }}
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
                 <h2 className="text-lg font-semibold text-[#f0f4f8]">编辑知识图谱</h2>
                 <motion.button
                   className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
@@ -510,31 +516,33 @@ export default function GraphsView() {
                 </motion.button>
               </div>
 
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ marginBottom: '20px' }}>
+                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
                     名称 <span className="text-[#f44336]">*</span>
                   </label>
                   <input
                     type="text"
-                    className={`w-full px-4 py-2.5 neo-input text-sm ${
+                    className={`w-full neo-input text-sm ${
                       formErrors.name ? 'border-[#f44336]' : ''
                     }`}
+                    style={{ padding: '12px 16px' }}
                     placeholder="输入知识图谱名称"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     maxLength={50}
                   />
                   {formErrors.name && (
-                    <p className="text-xs text-[#f44336] mt-1">{formErrors.name}</p>
+                    <p className="text-xs text-[#f44336]" style={{ marginTop: '8px' }}>{formErrors.name}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#94a3b8] mb-2">
+                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
                     描述
                   </label>
                   <textarea
-                    className="w-full px-4 py-2.5 neo-input text-sm resize-none"
+                    className="w-full neo-input text-sm resize-none"
+                    style={{ padding: '12px 16px' }}
                     placeholder="输入知识图谱描述（可选）"
                     rows={3}
                     value={formData.description}
@@ -544,9 +552,10 @@ export default function GraphsView() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3" style={{ paddingTop: '8px' }}>
                 <motion.button
-                  className="flex-1 px-4 py-2.5 neo-btn-secondary rounded-lg font-medium text-sm"
+                  className="flex-1 neo-btn-secondary rounded-lg font-medium text-sm"
+                  style={{ padding: '12px 16px' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={closeModal}
@@ -555,7 +564,8 @@ export default function GraphsView() {
                   取消
                 </motion.button>
                 <motion.button
-                  className="flex-1 px-4 py-2.5 neo-btn-primary rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  className="flex-1 neo-btn-primary rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  style={{ padding: '12px 16px' }}
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleUpdate}
