@@ -20,6 +20,7 @@ from backend.models.schemas import TaskStatus
 from disk import DISK
 from config.llm import llm, embeddings
 from models.knowledge_graph import KnowledgeGraph
+from models.neo4j_connector import Neo4jConnector
 
 logger = logging.getLogger(__name__)
 
@@ -134,101 +135,19 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         kg = load_knowledge_from_neo4j()
         disk = DISK(llm=llm, embeddings=embeddings, kg=kg)
 
-        # Step 1: 蒸馏PDF文本 (10%)
-        self.update_state(state="PROGRESS", meta={"step": "distilling", "progress": 0.1})
-        update_task_progress(task_id, 0.1, "蒸馏文本", "正在从PDF提取文本块...")
+        # 使用 DISK 的 build_knowledge_graph 方法（并行模式）
+        update_task_progress(task_id, 0.1, "构建知识图谱", "正在提取文本并构建知识图谱...")
 
-        # 使用DISK的PDFDistiller
-        from distiller import PDFDistiller
-        distiller = PDFDistiller()
-        texts = distiller.extract_text_blocks(file_path)
+        final_kg = disk.build_knowledge_graph(
+            pdf_path=file_path,
+            mode="parallel"  # 使用并行模式，提升处理速度
+        )
 
-        if not texts:
-            raise Exception("无法从PDF提取文本内容")
-
-        total_blocks = len(texts)
-        logger.info(f"Extracted {total_blocks} text blocks from PDF")
-
-        # Step 2: 抽取实体和关系 (10% - 80%)
-        update_task_progress(task_id, 0.15, "抽取知识", f"开始处理 {total_blocks} 个文本块...")
-
-        from extractor import Extractor
-        from merger import Merger
-
-        extractor = Extractor(llm=llm, embeddings=embeddings)
-        merger = Merger()
-
-        all_entities = []
-        all_relations = []
-
-        for i, text in enumerate(texts):
-            try:
-                # 检查超时
-                if self.request.called_directly:
-                    raise SoftTimeLimitExceeded()
-
-                # 抽取实体和关系
-                result = extractor.extract_relations_and_entities(text)
-                if result is None:
-                    continue
-
-                relations, entities = result
-
-                # 合并到已有知识图谱
-                if len(all_entities) > 0 and len(all_relations) > 0:
-                    all_relations, all_entities = merger.merge(
-                        entities1=all_entities,
-                        relations1=all_relations,
-                        entities2=entities,
-                        relations2=relations
-                    )
-                else:
-                    all_entities = entities
-                    all_relations = relations
-
-                # 更新进度 (15% - 80%)
-                progress = 0.15 + (i + 1) / total_blocks * 0.65
-                update_task_progress(
-                    task_id,
-                    progress,
-                    "抽取知识",
-                    f"正在处理第 {i + 1}/{total_blocks} 个文本块...",
-                    entities_count=len(all_entities),
-                    relations_count=len(all_relations)
-                )
-
-                # 每处理完一个block更新一次Celery状态
-                self.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "step": "extracting",
-                        "progress": progress,
-                        "current": i + 1,
-                        "total": total_blocks,
-                        "entities_count": len(all_entities),
-                        "relations_count": len(all_relations)
-                    }
-                )
-
-            except Exception as e:
-                logger.error(f"Error processing block {i}: {e}")
-                continue
-
-        # Step 3: 构建知识图谱 (80% - 90%)
-        update_task_progress(task_id, 0.85, "构建图谱", "正在整合实体和关系...")
-
-        from manager import KGManager
-        kg_manager = KGManager(kg=kg)
-        kg_manager.add_entities(all_entities)
-        kg_manager.add_relations(all_relations)
-
-        final_kg = kg_manager.kg
         logger.info(f"Knowledge graph built: {len(final_kg.entities)} entities, {len(final_kg.relations)} relations")
 
-        # Step 4: 持久化到Neo4j (90% - 100%)
+        # 持久化到Neo4j
         update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...")
 
-        from models.neo4j_connector import Neo4jConnector
         from backend.core.config import settings
 
         # 传入 graph_id 实现数据隔离
@@ -248,7 +167,9 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
             1.0,
             "完成",
             f"知识图谱构建完成！实体数: {len(final_kg.entities)}, 关系数: {len(final_kg.relations)}",
-            TaskStatus.COMPLETED
+            TaskStatus.COMPLETED,
+            entities_count=len(final_kg.entities),
+            relations_count=len(final_kg.relations)
         )
 
         # 更新文档状态
