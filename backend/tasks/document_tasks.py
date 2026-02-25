@@ -54,15 +54,78 @@ def update_task_progress(task_id: str, progress: float, current_step: str, messa
         db.close()
 
 
-def load_knowledge_from_neo4j() -> KnowledgeGraph:
-    """从Neo4j加载现有知识图谱
+def load_knowledge_from_neo4j(graph_id: str = None) -> KnowledgeGraph:
+    """从Neo4j加载指定知识图谱的已有数据，用于增量构建
 
-    注意：当前DISK的KnowledgeGraph是内存结构，Neo4j connector是单向写入
-    这里我们创建一个空的KG，让DISK做增量处理
+    Args:
+        graph_id: 知识图谱ID，如果为None则返回空KG
+
+    Returns:
+        KnowledgeGraph: 包含已有实体和关系的知识图谱
     """
-    # 由于DISK的Neo4jConnector是单向写入，我们需要通过其他方式实现增量
-    # 暂时返回空KG，依赖后续的合并逻辑
-    return KnowledgeGraph()
+    from neo4j import GraphDatabase
+    from backend.core.config import settings
+    from models.knowledge_graph import Entity, Relation
+
+    # 如果没有graph_id，返回空KG
+    if not graph_id:
+        return KnowledgeGraph()
+
+    kg = KnowledgeGraph()
+
+    try:
+        driver = GraphDatabase.driver(
+            settings.NEO4J_URI,
+            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+        )
+
+        with driver.session() as session:
+            # 加载该图谱的所有实体
+            entity_query = """
+                MATCH (n {graph_id: $graph_id})
+                RETURN labels(n)[0] as label, n.name as name, n.embedding as embedding
+            """
+            entity_result = session.run(entity_query, {"graph_id": graph_id})
+            for record in entity_result:
+                entity = Entity(
+                    label=record["label"] or "Entity",
+                    name=record["name"],
+                    embedding=record["embedding"]
+                )
+                kg.entities.append(entity)
+
+            # 加载该图谱的所有关系
+            # 需要重新构建Entity对象作为关系的起点和终点
+            entity_map = {e.name: e for e in kg.entities}
+
+            relation_query = """
+                MATCH (a {graph_id: $graph_id})-[r]->(b {graph_id: $graph_id})
+                RETURN labels(a)[0] as start_label, a.name as start_name,
+                       labels(b)[0] as end_label, b.name as end_name,
+                       type(r) as label, r.name as name, r.embedding as embedding
+            """
+            relation_result = session.run(relation_query, {"graph_id": graph_id})
+            for record in relation_result:
+                start_entity = entity_map.get(record["start_name"])
+                end_entity = entity_map.get(record["end_name"])
+
+                if start_entity and end_entity:
+                    relation = Relation(
+                        start_entity=start_entity,
+                        end_entity=end_entity,
+                        label=record["label"] or "RELATION",
+                        name=record["name"],
+                        embedding=record["embedding"]
+                    )
+                    kg.relations.append(relation)
+
+        driver.close()
+        logger.info(f"Loaded knowledge graph {graph_id}: {len(kg.entities)} entities, {len(kg.relations)} relations")
+
+    except Exception as e:
+        logger.error(f"Failed to load knowledge graph from Neo4j: {e}")
+
+    return kg
 
 
 def update_graph_stats(graph_id: str, db: SessionLocal):
@@ -132,7 +195,11 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         update_task_progress(task_id, 0.0, "初始化", f"准备处理文档{' (图谱: ' + graph.name + ')' if graph else ''}...", TaskStatus.PROCESSING)
 
         # 初始化DISK实例（每个任务独立实例）
-        kg = load_knowledge_from_neo4j()
+        # 从Neo4j加载该图谱的已有数据，实现增量构建
+        kg = load_knowledge_from_neo4j(graph_id)
+        original_entity_count = len(kg.entities)
+        original_relation_count = len(kg.relations)
+
         disk = DISK(llm=llm, embeddings=embeddings, kg=kg)
 
         # 使用 DISK 的 build_knowledge_graph 方法（并行模式）
@@ -145,7 +212,13 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
 
         logger.info(f"Knowledge graph built: {len(final_kg.entities)} entities, {len(final_kg.relations)} relations")
 
-        # 持久化到Neo4j
+        # 计算新增的实体和关系（用于持久化）
+        new_entities = final_kg.entities[original_entity_count:]
+        new_relations = final_kg.relations[original_relation_count:]
+
+        logger.info(f"New entities: {len(new_entities)}, new relations: {len(new_relations)}")
+
+        # 持久化到Neo4j（只保存新增的实体和关系）
         update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...")
 
         from backend.core.config import settings
@@ -157,8 +230,8 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
             password=settings.NEO4J_PASSWORD,
             graph_id=graph_id
         )
-        connector.create_entities(final_kg.entities)
-        connector.create_relations(final_kg.relations)
+        connector.create_entities(new_entities)
+        connector.create_relations(new_relations)
         connector.close()
 
         # 更新为完成状态
