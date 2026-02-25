@@ -1001,7 +1001,7 @@ export default function GraphView() {
               className="shrink-0"
             >
               <NeoCard className="h-full p-5 w-80" variant="elevated">
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between" style={{ marginBottom: '20px' }}>
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: nodeColors[selectedNode.type].bg }}
@@ -1018,27 +1018,27 @@ export default function GraphView() {
                   </motion.button>
                 </div>
 
-                <h2 className="text-lg font-semibold text-[#f0f4f8] mb-2">
+                <h2 className="text-lg font-semibold text-[#f0f4f8]" style={{ marginBottom: '8px' }}>
                   {selectedNode.label}
                 </h2>
                 <span
-                  className="inline-block px-2.5 py-1 rounded-md text-xs font-medium text-white mb-4"
-                  style={{ backgroundColor: nodeColors[selectedNode.type].bg }}
+                  className="inline-block px-2.5 py-1 rounded-md text-xs font-medium text-white"
+                  style={{ backgroundColor: nodeColors[selectedNode.type].bg, marginBottom: '16px' }}
                 >
                   {typeLabels[selectedNode.type]}
                 </span>
 
-                <p className="text-sm text-[#94a3b8] leading-relaxed mb-6">
+                <p className="text-sm text-[#94a3b8] leading-relaxed" style={{ marginBottom: '28px' }}>
                   {selectedNode.description || '暂无描述信息'}
                 </p>
 
                 {/* Related nodes */}
                 <div>
-                  <h3 className="text-sm font-medium text-[#f0f4f8] mb-3 flex items-center gap-2">
+                  <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
                     <Link2 className="w-4 h-4 text-[#00b4d8]" />
                     关联实体
                   </h3>
-                  <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                  <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {edges
                       .filter(
                         (e) =>
@@ -1058,7 +1058,7 @@ export default function GraphView() {
                             onClick={() => setSelectedNode(relatedNode)}
                           >
                             <div
-                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                               style={{
                                 backgroundColor: nodeColors[relatedNode.type].bg + '20',
                               }}
@@ -1074,7 +1074,7 @@ export default function GraphView() {
                               <p className="text-sm font-medium text-[#f0f4f8] truncate">
                                 {relatedNode.label}
                               </p>
-                              <p className="text-xs text-[#64748b]">{edge.label}</p>
+                              <p className="text-xs text-[#64748b]" style={{ marginTop: '2px' }}>{edge.label}</p>
                             </div>
                           </motion.div>
                         )
