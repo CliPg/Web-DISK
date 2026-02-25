@@ -35,6 +35,8 @@ class CallbackTask(Task):
 
 def update_task_progress(task_id: str, progress: float, current_step: str, message: str, status: Optional[TaskStatus] = None, entities_count: int = 0, relations_count: int = 0):
     """更新任务进度到数据库"""
+    from datetime import datetime
+
     db = SessionLocal()
     try:
         task = db.query(DBTask).filter(DBTask.id == task_id).first()
@@ -46,6 +48,9 @@ def update_task_progress(task_id: str, progress: float, current_step: str, messa
             task.relations_count = relations_count
             if status:
                 task.status = status
+                # 任务完成或失败时，设置 completed_at 时间
+                if status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
+                    task.completed_at = datetime.utcnow()
             db.commit()
     except Exception as e:
         logger.error(f"Failed to update task progress: {e}")
@@ -129,39 +134,28 @@ def load_knowledge_from_neo4j(graph_id: str = None) -> KnowledgeGraph:
 
 
 def update_graph_stats(graph_id: str, db: SessionLocal):
-    """更新知识图谱的统计信息"""
+    """更新知识图谱的统计信息（直接从Neo4j获取实际数量）"""
     try:
-        # 获取图谱下所有已完成任务的实体和关系统计
-        from sqlalchemy import func
+        from backend.db.neo4j import Neo4jRepository
 
-        # 获取该图谱下的文档ID列表
-        doc_ids = db.query(DBDocument.id).filter(DBDocument.graph_id == graph_id).all()
-        doc_ids = [d[0] for d in doc_ids]
+        # 从 Neo4j 获取实际的实体和关系数量
+        neo4j_repo = Neo4jRepository()
+        stats = neo4j_repo.get_stats(graph_id=graph_id)
 
-        if not doc_ids:
-            return
+        entity_count = stats.get('total_entities', 0)
+        relation_count = stats.get('total_relations', 0)
 
-        # 获取这些文档关联的最新任务的统计
-        stats = db.query(
-            func.sum(DBTask.entities_count).label('entities'),
-            func.sum(DBTask.relations_count).label('relations')
-        ).join(
-            DBDocument, DBDocument.id == DBTask.document_id
-        ).filter(
-            DBDocument.graph_id == graph_id,
-            DBTask.status == TaskStatus.COMPLETED
-        ).first()
-
-        entity_count = stats.entities or 0
-        relation_count = stats.relations or 0
+        # 获取该图谱下的文档数量
+        doc_count = db.query(DBDocument).filter(DBDocument.graph_id == graph_id).count()
 
         # 更新知识图谱的统计信息
         graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
         if graph:
             graph.entity_count = int(entity_count)
             graph.relation_count = int(relation_count)
-            graph.document_count = len(doc_ids)
+            graph.document_count = doc_count
             db.commit()
+            logger.info(f"Updated graph {graph_id} stats: {entity_count} entities, {relation_count} relations, {doc_count} documents")
 
     except Exception as e:
         logger.error(f"Failed to update graph stats: {e}")
