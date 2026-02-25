@@ -11,6 +11,8 @@ export interface KGEdge {
   source: string
   target: string
   label: string
+  description?: string
+  properties?: Record<string, unknown>
 }
 
 export interface KGDocument {

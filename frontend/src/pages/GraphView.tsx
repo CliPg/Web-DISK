@@ -83,6 +83,8 @@ function transformRelations(relations: Array<{ start_id: string; end_id: string;
     source: rel.start_id,
     target: rel.end_id,
     label: rel.type,
+    description: typeof rel.properties.description === 'string' ? rel.properties.description : undefined,
+    properties: rel.properties,
   }))
 }
 
@@ -95,7 +97,9 @@ export default function GraphView() {
   const positionsRef = useRef<NodePosition[]>([])
   const [positions, setPositions] = useState<NodePosition[]>([])
   const [selectedNode, setSelectedNode] = useState<KGNode | null>(null)
+  const [selectedEdge, setSelectedEdge] = useState<KGEdge | null>(null)
   const [hoveredNode, setHoveredNode] = useState<string | null>(null)
+  const [hoveredEdge, setHoveredEdge] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 })
   const animationRef = useRef<number | undefined>(undefined)
@@ -484,6 +488,7 @@ export default function GraphView() {
 
       if (!hasMoved) {
         setSelectedNode(node)
+        setSelectedEdge(null)
       }
     },
     [getPosition]
@@ -495,9 +500,14 @@ export default function GraphView() {
     if (e.button !== 0) return
     // 如果正在拖拽节点，不触发画布拖拽
     if (dragState.isDragging) return
-    // 检查点击的是否是节点
+    // 检查点击的是否是节点或边
     const target = e.target as SVGElement
     if (target.closest('g[data-node]')) return
+    if (target.closest('line')) return
+
+    // 清除选择
+    setSelectedNode(null)
+    setSelectedEdge(null)
 
     setIsCanvasDragging(true)
     canvasDragStartRef.current = { x: e.clientX, y: e.clientY }
@@ -518,7 +528,14 @@ export default function GraphView() {
     return connected
   }
 
+  const getConnectedNodesForEdge = (edgeId: string) => {
+    const edge = edges.find(e => e.id === edgeId)
+    if (!edge) return new Set<string>()
+    return new Set([edge.source, edge.target])
+  }
+
   const connectedToHovered = hoveredNode ? getConnectedNodes(hoveredNode) : new Set<string>()
+  const connectedToSelectedEdge = selectedEdge ? getConnectedNodesForEdge(selectedEdge.id) : new Set<string>()
 
   // Refresh graph data
   const handleRefresh = async () => {
@@ -901,8 +918,10 @@ export default function GraphView() {
                 {edges.map((edge) => {
                   const source = getPosition(edge.source)
                   const target = getPosition(edge.target)
+                  const isEdgeSelected = selectedEdge?.id === edge.id
                   const isHighlighted =
-                    hoveredNode === edge.source || hoveredNode === edge.target
+                    hoveredNode === edge.source || hoveredNode === edge.target ||
+                    hoveredEdge === edge.id || isEdgeSelected
                   const midX = (source.x + target.x) / 2
                   const midY = (source.y + target.y) / 2
 
@@ -914,10 +933,17 @@ export default function GraphView() {
                         x2={target.x}
                         y2={target.y}
                         stroke={isHighlighted ? '#00b4d8' : '#2a3548'}
-                        strokeWidth={isHighlighted ? 2 : 1}
+                        strokeWidth={isEdgeSelected ? 3 : isHighlighted ? 2 : 1}
                         opacity={hoveredNode && !isHighlighted ? 0.15 : 1}
                         markerEnd={isHighlighted ? 'url(#arrowhead-active)' : 'url(#arrowhead)'}
-                        style={{ transition: 'all 0.2s ease' }}
+                        style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+                        onMouseEnter={() => setHoveredEdge(edge.id)}
+                        onMouseLeave={() => setHoveredEdge(null)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedEdge(edge)
+                          setSelectedNode(null)
+                        }}
                       />
                       {isHighlighted && (
                         <text
@@ -927,6 +953,8 @@ export default function GraphView() {
                           fill="#00b4d8"
                           fontSize="11"
                           fontWeight="500"
+                          pointerEvents="none"
+                          style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
                         >
                           {edge.label}
                         </text>
@@ -943,6 +971,7 @@ export default function GraphView() {
                   const colors = nodeColors[node.type]
                   const isHovered = hoveredNode === node.id
                   const isConnected = connectedToHovered.has(node.id)
+                  const isConnectedToEdge = connectedToSelectedEdge.has(node.id)
                   const isDimmed = hoveredNode && !isHovered && !isConnected
                   const isSelected = selectedNode?.id === node.id
                   const isDragging = dragState.nodeId === node.id
@@ -961,13 +990,13 @@ export default function GraphView() {
                       onMouseLeave={() => !dragState.isDragging && setHoveredNode(null)}
                       onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
                       onClick={(e) => handleNodeClick(e, node)}
-                      filter={isHovered || isSelected || isDragging ? 'url(#glow)' : undefined}
+                      filter={isHovered || isSelected || isDragging || isConnectedToEdge ? 'url(#glow)' : undefined}
                     >
                       <circle
-                        r={isHovered || isDragging ? 28 : 24}
+                        r={isHovered || isDragging || isConnectedToEdge ? 28 : 24}
                         fill={colors.bg}
-                        stroke={isSelected || isDragging ? '#00b4d8' : colors.border}
-                        strokeWidth={isSelected || isDragging ? 3 : isHovered ? 2 : 1.5}
+                        stroke={isSelected || isDragging || isConnectedToEdge ? '#00b4d8' : colors.border}
+                        strokeWidth={isSelected || isDragging || isConnectedToEdge ? 3 : isHovered ? 2 : 1.5}
                         style={{ transition: 'all 0.2s ease' }}
                       />
                       <text
@@ -993,7 +1022,7 @@ export default function GraphView() {
         <AnimatePresence mode="wait">
           {selectedNode ? (
             <motion.div
-              key="detail"
+              key="node-detail"
               initial={{ opacity: 0, x: 20, width: 0 }}
               animate={{ opacity: 1, x: 0, width: 320 }}
               exit={{ opacity: 0, x: 20, width: 0 }}
@@ -1012,7 +1041,7 @@ export default function GraphView() {
                     className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => setSelectedNode(null)}
+                    onClick={() => { setSelectedNode(null); setSelectedEdge(null) }}
                   >
                     <X className="w-4 h-4" />
                   </motion.button>
@@ -1055,7 +1084,7 @@ export default function GraphView() {
                             key={edge.id}
                             className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] hover:bg-[#111827] border border-[#2a3548] hover:border-[#3b4a61] cursor-pointer transition-all"
                             whileHover={{ x: 2 }}
-                            onClick={() => setSelectedNode(relatedNode)}
+                            onClick={() => { setSelectedNode(relatedNode); setSelectedEdge(null) }}
                           >
                             <div
                               className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
@@ -1083,6 +1112,106 @@ export default function GraphView() {
                 </div>
               </NeoCard>
             </motion.div>
+          ) : selectedEdge ? (
+            <motion.div
+              key="edge-detail"
+              initial={{ opacity: 0, x: 20, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: 320 }}
+              exit={{ opacity: 0, x: 20, width: 0 }}
+              transition={{ duration: 0.25 }}
+              className="shrink-0"
+            >
+              <NeoCard className="h-full p-5 w-80" variant="elevated">
+                <div className="flex items-start justify-between" style={{ marginBottom: '20px' }}>
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: '#00b4d8' }}
+                  >
+                    <Link2 className="w-5 h-5 text-white" />
+                  </div>
+                  <motion.button
+                    className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => { setSelectedEdge(null) }}
+                  >
+                    <X className="w-4 h-4" />
+                  </motion.button>
+                </div>
+
+                <h2 className="text-lg font-semibold text-[#f0f4f8]" style={{ marginBottom: '8px' }}>
+                  {selectedEdge.label}
+                </h2>
+                <span
+                  className="inline-block px-2.5 py-1 rounded-md text-xs font-medium text-white"
+                  style={{ backgroundColor: '#00b4d8', marginBottom: '16px' }}
+                >
+                  关系
+                </span>
+
+                {selectedEdge.description && (
+                  <p className="text-sm text-[#94a3b8] leading-relaxed" style={{ marginBottom: '24px' }}>
+                    {selectedEdge.description}
+                  </p>
+                )}
+
+                {/* Connected entities */}
+                <div>
+                  <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                    <Info className="w-4 h-4 text-[#00b4d8]" />
+                    连接实体
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {nodes.find(n => n.id === selectedEdge.source) && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{
+                            backgroundColor: nodeColors[nodes.find(n => n.id === selectedEdge.source)!.type].bg + '20',
+                          }}
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor: nodeColors[nodes.find(n => n.id === selectedEdge.source)!.type].bg,
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-[#64748b]">起始实体</p>
+                          <p className="text-sm font-medium text-[#f0f4f8]">
+                            {nodes.find(n => n.id === selectedEdge.source)?.label}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {nodes.find(n => n.id === selectedEdge.target) && (
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{
+                            backgroundColor: nodeColors[nodes.find(n => n.id === selectedEdge.target)!.type].bg + '20',
+                          }}
+                        >
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor: nodeColors[nodes.find(n => n.id === selectedEdge.target)!.type].bg,
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-[#64748b]">目标实体</p>
+                          <p className="text-sm font-medium text-[#f0f4f8]">
+                            {nodes.find(n => n.id === selectedEdge.target)?.label}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </NeoCard>
+            </motion.div>
           ) : (
             <motion.div
               key="placeholder"
@@ -1095,7 +1224,7 @@ export default function GraphView() {
                 <div className="w-14 h-14 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
                   <Info className="w-6 h-6 text-[#64748b]" />
                 </div>
-                <p className="text-[#94a3b8] text-sm mb-1">点击图谱中的节点</p>
+                <p className="text-[#94a3b8] text-sm mb-1">点击图谱中的节点或关系</p>
                 <p className="text-[#64748b] text-sm">查看详细信息</p>
               </NeoCard>
             </motion.div>
