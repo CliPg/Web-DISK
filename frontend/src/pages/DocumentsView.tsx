@@ -117,6 +117,14 @@ export default function DocumentsView() {
     await fetchGraphs()
   }, [fetchGraphs])
 
+  // 解析后端返回的 UTC 时间字符串（后端用 datetime.utcnow() 存储，无时区标记）
+  const parseUTCTime = (timeStr: string): Date => {
+    const s = timeStr.endsWith('Z') || timeStr.includes('+') || timeStr.includes('-', 10)
+      ? timeStr
+      : timeStr + 'Z'
+    return new Date(s)
+  }
+
   // 计算构建耗时
   const calculateBuildTime = useCallback((taskStartedAt: string | undefined, taskCompletedAt: string | undefined, status: KGDocument['status']): string => {
     console.log('calculateBuildTime called:', { taskStartedAt, taskCompletedAt, status, currentTime })
@@ -125,7 +133,7 @@ export default function DocumentsView() {
     if (!taskStartedAt) return '--'
     if (status === 'pending') return '--'
 
-    const start = new Date(taskStartedAt)
+    const start = parseUTCTime(taskStartedAt)
     console.log('start date:', start, 'getTime():', start.getTime(), 'isNaN:', isNaN(start.getTime()))
 
     // 检查日期是否有效
@@ -135,7 +143,7 @@ export default function DocumentsView() {
     }
 
     // 对于已完成的任务，使用完成时间；对于处理中的任务，使用当前时间
-    const end = taskCompletedAt ? new Date(taskCompletedAt) : new Date(currentTime)
+    const end = taskCompletedAt ? parseUTCTime(taskCompletedAt) : new Date(currentTime)
     console.log('end date:', end, 'getTime():', end.getTime())
 
     if (taskCompletedAt && isNaN(end.getTime())) {
