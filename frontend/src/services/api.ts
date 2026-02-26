@@ -227,7 +227,7 @@ export const kgApi = {
   /**
    * 获取实体列表
    */
-  async getEntities(graphId: string, limit = 100, offset = 0): Promise<{
+  async getEntities(graphId: string, limit = 100, offset = 0, orderByRelationCount = false): Promise<{
     entities: Array<{
       id: string
       labels: string[]
@@ -235,7 +235,15 @@ export const kgApi = {
     }>
     total: number
   }> {
-    const response = await fetch(`${API_BASE}/knowledge-graph/entities?graph_id=${graphId}&limit=${limit}&offset=${offset}`)
+    const params = new URLSearchParams({
+      graph_id: graphId,
+      limit: limit.toString(),
+      offset: offset.toString(),
+    })
+    if (orderByRelationCount) {
+      params.append('order_by_relation_count', 'true')
+    }
+    const response = await fetch(`${API_BASE}/knowledge-graph/entities?${params}`)
     if (!response.ok) throw new Error('获取实体列表失败')
     return response.json()
   },

@@ -266,10 +266,13 @@ export default function GraphView() {
         setTotalEntityCount(actualEntityCount)
         setTotalRelationCount(actualRelationCount)
 
-        // 并行加载实体和关系，传入 graph_id
-        // 注意：API 限制最大 limit=500，所以我们最多能获取 500 个数据
+        // 根据实体数量决定加载策略
+        const shouldLoadTopEntities = actualEntityCount > 100
+
+        // 并行加载实体和关系
         const [entitiesData, relationsData] = await Promise.all([
-          kgApi.getEntities(selectedGraphId, 500, 0),
+          // 如果实体超过100个，直接从后端获取关系最多的50个
+          kgApi.getEntities(selectedGraphId, shouldLoadTopEntities ? 50 : 500, 0, shouldLoadTopEntities),
           kgApi.getRelations(selectedGraphId, 500, 0),
         ])
 
@@ -277,37 +280,13 @@ export default function GraphView() {
         let transformedNodes = transformEntities(entitiesData.entities)
         let transformedEdges = transformRelations(relationsData.relations)
 
-        // 当实际实体数量超过100时，只显示关系数量最多的50个实体
-        if (actualEntityCount > 100) {
-          // 统计每个实体的关系数量
-          const nodeRelationCount = new Map<string, number>()
-          for (const edge of transformedEdges) {
-            nodeRelationCount.set(edge.source, (nodeRelationCount.get(edge.source) || 0) + 1)
-            nodeRelationCount.set(edge.target, (nodeRelationCount.get(edge.target) || 0) + 1)
-          }
-
-          // 按关系数量排序，取前50个
-          const topNodeIds = Array.from(nodeRelationCount.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 50)
-            .map(([nodeId]) => nodeId)
-
-          // 如果不足50个，补充没有关系的节点
-          if (topNodeIds.length < 50) {
-            const remainingNodes = transformedNodes
-              .filter(node => !topNodeIds.includes(node.id))
-              .slice(0, 50 - topNodeIds.length)
-            topNodeIds.push(...remainingNodes.map(node => node.id))
-          }
-
-          // 过滤节点和边，只保留相关的
-          const nodeSet = new Set(topNodeIds)
-          transformedNodes = transformedNodes.filter(node => nodeSet.has(node.id))
+        // 如果启用了后端排序，需要过滤边以保留只与这些实体相关的关系
+        if (shouldLoadTopEntities) {
+          const nodeIds = new Set(transformedNodes.map(n => n.id))
           transformedEdges = transformedEdges.filter(edge =>
-            nodeSet.has(edge.source) && nodeSet.has(edge.target)
+            nodeIds.has(edge.source) && nodeIds.has(edge.target)
           )
-
-          console.log(`实体数量超过100 (实际${actualEntityCount}个，已加载${entitiesData.entities.length}个)，已筛选显示关系数量最多的${transformedNodes.length}个实体`)
+          console.log(`实体数量超过100 (实际${actualEntityCount}个)，已加载按关系数量排序的前${transformedNodes.length}个实体`)
         }
 
         setNodes(transformedNodes)

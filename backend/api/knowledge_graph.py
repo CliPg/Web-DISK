@@ -30,10 +30,16 @@ async def get_entities(
     graph_id: str = Query(..., description="知识图谱ID"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
+    order_by_relation_count: bool = Query(False, description="是否按关系数量降序排序"),
 ):
     """获取指定知识图谱的实体列表"""
     try:
-        entities = neo4j_repo.get_entities(graph_id=graph_id, limit=limit, offset=offset)
+        entities = neo4j_repo.get_entities(
+            graph_id=graph_id,
+            limit=limit,
+            offset=offset,
+            order_by_relation_count=order_by_relation_count
+        )
         return {"entities": entities, "total": len(entities)}
     except Exception as e:
         return {"entities": [], "total": 0}

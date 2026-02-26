@@ -82,28 +82,59 @@ class Neo4jRepository:
             "relation_types": relation_types
         }
 
-    def get_entities(self, graph_id: str, limit: int = 100, offset: int = 0) -> list[dict]:
-        """获取指定知识图谱的实体列表"""
+    def get_entities(self, graph_id: str, limit: int = 100, offset: int = 0, order_by_relation_count: bool = False) -> list[dict]:
+        """获取指定知识图谱的实体列表
+
+        Args:
+            graph_id: 知识图谱ID
+            limit: 返回数量限制
+            offset: 偏移量
+            order_by_relation_count: 是否按关系数量降序排序（用于获取关系最多的实体）
+        """
         driver = self.connect()
 
         with driver.session() as session:
-            result = session.run("""
-                MATCH (n {graph_id: $graph_id})
-                RETURN n
-                ORDER BY elementId(n)
-                SKIP $offset
-                LIMIT $limit
-            """, graph_id=graph_id, offset=offset, limit=limit)
+            if order_by_relation_count:
+                # 按关系数量排序：统计每个实体的关系数量（作为起点或终点）
+                result = session.run("""
+                    MATCH (n {graph_id: $graph_id})
+                    OPTIONAL MATCH (n)-[r]-()
+                    WITH n, count(r) as relation_count
+                    ORDER BY relation_count DESC
+                    SKIP $offset
+                    LIMIT $limit
+                    RETURN n, relation_count
+                """, graph_id=graph_id, offset=offset, limit=limit)
 
-            entities = []
-            for record in result:
-                node = record["n"]
-                entities.append({
-                    "id": element_id(node),
-                    "labels": list(node.labels),
-                    "properties": dict(node)
-                })
-            return entities
+                entities = []
+                for record in result:
+                    node = record["n"]
+                    entities.append({
+                        "id": element_id(node),
+                        "labels": list(node.labels),
+                        "properties": dict(node),
+                        "relation_count": record["relation_count"]
+                    })
+                return entities
+            else:
+                # 默认按 elementId 排序
+                result = session.run("""
+                    MATCH (n {graph_id: $graph_id})
+                    RETURN n
+                    ORDER BY elementId(n)
+                    SKIP $offset
+                    LIMIT $limit
+                """, graph_id=graph_id, offset=offset, limit=limit)
+
+                entities = []
+                for record in result:
+                    node = record["n"]
+                    entities.append({
+                        "id": element_id(node),
+                        "labels": list(node.labels),
+                        "properties": dict(node)
+                    })
+                return entities
 
     def get_relations(self, graph_id: str, limit: int = 100, offset: int = 0) -> list[dict]:
         """获取指定知识图谱的关系列表"""
