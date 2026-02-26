@@ -253,7 +253,15 @@ export default function GraphView() {
   useEffect(() => {
     if (!selectedGraphId) return
 
+    // 添加一个标志来跟踪这个 effect 是否是最新的
+    let isCancelled = false
+
     const loadGraphData = async () => {
+      // 先清空旧数据，避免在 loading 时显示旧图谱
+      setNodes([])
+      setEdges([])
+      edgesRef.current = []
+
       setIsLoading(true)
       setLoadError(null)
       try {
@@ -261,6 +269,11 @@ export default function GraphView() {
         const currentGraph = graphs.find(g => g.id === selectedGraphId)
         const actualEntityCount = currentGraph?.entity_count || 0
         const actualRelationCount = currentGraph?.relation_count || 0
+
+        // 如果图谱还未加载完成，跳过
+        if (!currentGraph) {
+          return
+        }
 
         // 保存实际的实体和关系总数
         setTotalEntityCount(actualEntityCount)
@@ -273,8 +286,11 @@ export default function GraphView() {
         const [entitiesData, relationsData] = await Promise.all([
           // 如果实体超过100个，直接从后端获取关系最多的50个
           kgApi.getEntities(selectedGraphId, shouldLoadTopEntities ? 50 : 500, 0, shouldLoadTopEntities),
-          kgApi.getRelations(selectedGraphId, 500, 0),
+          kgApi.getRelations(selectedGraphId, shouldLoadTopEntities ? 200 : 500, 0),
         ])
+
+        // 如果在加载过程中图谱被切换，放弃这次更新
+        if (isCancelled) return
 
         // 转换数据格式
         let transformedNodes = transformEntities(entitiesData.entities)
@@ -296,11 +312,18 @@ export default function GraphView() {
         console.error('Failed to load graph data:', error)
         setLoadError('加载知识图谱数据失败')
       } finally {
-        setIsLoading(false)
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
       }
     }
 
     loadGraphData()
+
+    // 清理函数：当 effect 重新运行时取消之前的请求
+    return () => {
+      isCancelled = true
+    }
   }, [selectedGraphId, graphs])
 
   // Initialize positions
