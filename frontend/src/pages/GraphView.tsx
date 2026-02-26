@@ -94,6 +94,9 @@ export default function GraphView() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [nodes, setNodes] = useState<KGNode[]>([])
   const [edges, setEdges] = useState<KGEdge[]>([])
+  // 保存实际的实体和关系总数（不受筛选影响）
+  const [totalEntityCount, setTotalEntityCount] = useState(0)
+  const [totalRelationCount, setTotalRelationCount] = useState(0)
   const positionsRef = useRef<NodePosition[]>([])
   const [positions, setPositions] = useState<NodePosition[]>([])
   const [selectedNode, setSelectedNode] = useState<KGNode | null>(null)
@@ -254,7 +257,17 @@ export default function GraphView() {
       setIsLoading(true)
       setLoadError(null)
       try {
+        // 从 graphs 列表中获取当前图谱的实际统计数据
+        const currentGraph = graphs.find(g => g.id === selectedGraphId)
+        const actualEntityCount = currentGraph?.entity_count || 0
+        const actualRelationCount = currentGraph?.relation_count || 0
+
+        // 保存实际的实体和关系总数
+        setTotalEntityCount(actualEntityCount)
+        setTotalRelationCount(actualRelationCount)
+
         // 并行加载实体和关系，传入 graph_id
+        // 注意：API 限制最大 limit=500，所以我们最多能获取 500 个数据
         const [entitiesData, relationsData] = await Promise.all([
           kgApi.getEntities(selectedGraphId, 500, 0),
           kgApi.getRelations(selectedGraphId, 500, 0),
@@ -264,8 +277,8 @@ export default function GraphView() {
         let transformedNodes = transformEntities(entitiesData.entities)
         let transformedEdges = transformRelations(relationsData.relations)
 
-        // 当实体数量超过100时，只显示关系数量最多的50个实体
-        if (transformedNodes.length > 100) {
+        // 当实际实体数量超过100时，只显示关系数量最多的50个实体
+        if (actualEntityCount > 100) {
           // 统计每个实体的关系数量
           const nodeRelationCount = new Map<string, number>()
           for (const edge of transformedEdges) {
@@ -294,7 +307,7 @@ export default function GraphView() {
             nodeSet.has(edge.source) && nodeSet.has(edge.target)
           )
 
-          console.log(`实体数量超过100 (${entitiesData.entities.length}个)，已筛选显示关系数量最多的${transformedNodes.length}个实体`)
+          console.log(`实体数量超过100 (实际${actualEntityCount}个，已加载${entitiesData.entities.length}个)，已筛选显示关系数量最多的${transformedNodes.length}个实体`)
         }
 
         setNodes(transformedNodes)
@@ -309,7 +322,7 @@ export default function GraphView() {
     }
 
     loadGraphData()
-  }, [selectedGraphId])
+  }, [selectedGraphId, graphs])
 
   // Initialize positions
   useEffect(() => {
@@ -698,7 +711,7 @@ export default function GraphView() {
         <div>
           <h1 className="text-xl font-semibold text-[#f0f4f8]">知识图谱</h1>
           <p className="text-[#64748b] text-sm mt-0.5">
-            {nodes.length} 个实体 · {edges.length} 个关系
+            {totalEntityCount} 个实体 · {totalRelationCount} 个关系
           </p>
         </div>
 
