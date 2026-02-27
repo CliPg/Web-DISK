@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # File Storage
     UPLOAD_DIR: Path = Path(__file__).resolve().parent.parent.parent / "uploads"
     MAX_UPLOAD_SIZE: int = 100 * 1024 * 1024  # 100MB
-    ALLOWED_EXTENSIONS: set[str] = {".pdf"}
+    ALLOWED_EXTENSIONS: set[str] = {".pdf", ".docx", ".txt", ".md"}
 
     # Database
     SQLITE_DB_PATH: Path = Path(__file__).resolve().parent.parent.parent / "data" / "app.db"
