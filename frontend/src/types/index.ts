@@ -63,6 +63,27 @@ export interface SearchResult {
   description: string
   relevance: number
   metadata?: Record<string, string>
+  // 新增字段用于后端返回数据
+  name?: string
+  label?: string
+  labels?: string[]
+  properties?: Record<string, unknown>
+  related_entities?: RelatedEntity[]
+  source_entity?: EntityRef
+  target_entity?: EntityRef
+}
+
+export interface RelatedEntity {
+  relation_type: string
+  relation_name: string
+  entity_id: string
+  entity_name: string
+  entity_labels: string[]
+}
+
+export interface EntityRef {
+  id: string
+  name: string
 }
 
 export interface LogEntry {

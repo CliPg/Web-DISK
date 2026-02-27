@@ -266,6 +266,93 @@ export const kgApi = {
     if (!response.ok) throw new Error('获取关系列表失败')
     return response.json()
   },
+
+  /**
+   * 搜索知识图谱
+   */
+  async searchKnowledgeGraph(graphId: string, query: string, searchType = 'all', limit = 20): Promise<{
+    results: Array<{
+      id: string
+      type: 'entity' | 'relation'
+      name: string
+      label: string
+      description: string
+      labels: string[]
+      properties: Record<string, unknown>
+      related_entities?: Array<{
+        relation_type: string
+        relation_name: string
+        entity_id: string
+        entity_name: string
+        entity_labels: string[]
+      }>
+      source_entity?: { id: string; name: string }
+      target_entity?: { id: string; name: string }
+      relevance: number
+    }>
+    total: number
+  }> {
+    const params = new URLSearchParams({
+      graph_id: graphId,
+      query: query,
+      search_type: searchType,
+      limit: limit.toString(),
+    })
+    const response = await fetch(`${API_BASE}/knowledge-graph/search?${params}`)
+    if (!response.ok) throw new Error('搜索知识图谱失败')
+    return response.json()
+  },
+
+  /**
+   * 语义相似度搜索
+   */
+  async searchSimilarEntities(graphId: string, query: string, limit = 10): Promise<{
+    results: Array<{
+      id: string
+      type: 'entity'
+      name: string
+      label: string
+      description: string
+      labels: string[]
+      properties: Record<string, unknown>
+      relevance: number
+    }>
+    total: number
+  }> {
+    const response = await fetch(`${API_BASE}/knowledge-graph/search/similar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        graph_id: graphId,
+        query: query,
+        limit: limit,
+      }),
+    })
+    if (!response.ok) throw new Error('语义搜索失败')
+    return response.json()
+  },
+
+  /**
+   * 获取关联实体
+   */
+  async getRelatedEntities(graphId: string, entityId: string, depth = 1): Promise<{
+    related_entities: Array<{
+      id: string
+      name: string
+      label: string
+      description: string
+      labels: string[]
+      properties: Record<string, unknown>
+      connection_count: number
+    }>
+    total: number
+  }> {
+    const response = await fetch(
+      `${API_BASE}/knowledge-graph/entities/${entityId}/related?graph_id=${graphId}&depth=${depth}`
+    )
+    if (!response.ok) throw new Error('获取关联实体失败')
+    return response.json()
+  },
 }
 
 /**

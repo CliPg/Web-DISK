@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
@@ -10,15 +10,19 @@ import {
   Clock,
   ChevronRight,
   Sparkles,
+  Network,
+  ChevronDown,
+  Loader2,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
-import type { SearchResult } from '../types'
+import type { SearchResult, KnowledgeGraph } from '../types'
+import { kgApi, graphsApi } from '../services/api'
+import { useSelectedGraph } from '../hooks/useSelectedGraph'
 
 const typeFilters = [
   { value: 'all', label: '全部' },
   { value: 'entity', label: '实体' },
   { value: 'relation', label: '关系' },
-  { value: 'document', label: '文档' },
 ]
 
 const typeIcons: Record<SearchResult['type'], typeof Circle> = {
@@ -33,36 +37,182 @@ const typeColors: Record<SearchResult['type'], string> = {
   document: '#f59e0b',
 }
 
-const recentSearches = ['深度学习', 'Transformer', '神经网络', '注意力机制']
+// 搜索结果转换为 SearchResult 格式
+function transformSearchResult(result: any): SearchResult {
+  const baseResult: SearchResult = {
+    id: result.id,
+    type: result.type,
+    title: result.name || result.label || '未命名',
+    description: result.description || '暂无描述',
+    relevance: result.relevance || 1,
+  }
+
+  // 添加元数据
+  if (result.related_entities && result.related_entities.length > 0) {
+    baseResult.metadata = {
+      '关联实体': result.related_entities.length.toString(),
+    }
+  }
+
+  if (result.source_entity || result.target_entity) {
+    baseResult.metadata = {
+      ...baseResult.metadata,
+      '起始实体': result.source_entity?.name || '-',
+      '目标实体': result.target_entity?.name || '-',
+    }
+  }
+
+  // 保存原始数据
+  baseResult.name = result.name
+  baseResult.label = result.label
+  baseResult.labels = result.labels
+  baseResult.properties = result.properties
+  baseResult.related_entities = result.related_entities
+  baseResult.source_entity = result.source_entity
+  baseResult.target_entity = result.target_entity
+
+  return baseResult
+}
 
 export default function SearchView() {
+  // 知识图谱选择相关状态
+  const [graphs, setGraphs] = useState<KnowledgeGraph[]>([])
+  const [graphDropdownOpen, setGraphDropdownOpen] = useState(false)
+
+  // 使用持久化的选择 hook
+  const { selectedGraphId, setSelectedGraphId } = useSelectedGraph(graphs)
+
   const [query, setQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('all')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showRecent, setShowRecent] = useState(true)
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('recentSearches')
+      return saved ? JSON.parse(saved) : ['深度学习', 'Transformer', '神经网络', '注意力机制']
+    }
+    return ['深度学习', 'Transformer', '神经网络', '注意力机制']
+  })
 
-  const handleSearch = (searchQuery: string) => {
+  // 防抖定时器
+  const debounceTimerRef = useRef<number | null>(null)
+
+  // 加载知识图谱列表
+  useEffect(() => {
+    const loadGraphs = async () => {
+      try {
+        const data = await graphsApi.list()
+        setGraphs(data.graphs)
+      } catch (error) {
+        console.error('Failed to load graphs:', error)
+      }
+    }
+    loadGraphs()
+  }, [])
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.graph-selector')) {
+        setGraphDropdownOpen(false)
+      }
+    }
+
+    if (graphDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [graphDropdownOpen])
+
+  // 保存最近搜索到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('recentSearches', JSON.stringify(recentSearches))
+    }
+  }, [recentSearches])
+
+  // 执行搜索
+  const performSearch = useCallback(async (searchQuery: string) => {
+    if (!selectedGraphId) {
+      console.warn('No graph selected')
+      setIsSearching(false)
+      return
+    }
+
     if (!searchQuery.trim()) {
       setResults([])
       setShowRecent(true)
+      setIsSearching(false)
       return
     }
 
     setIsSearching(true)
     setShowRecent(false)
 
-    // TODO: 实现真实的搜索 API 调用
-    setTimeout(() => {
+    try {
+      const data = await kgApi.searchKnowledgeGraph(
+        selectedGraphId,
+        searchQuery,
+        activeFilter === 'all' ? 'all' : activeFilter,
+        50
+      )
+
+      const transformedResults = data.results.map(transformSearchResult)
+      setResults(transformedResults)
+
+      // 添加到最近搜索（去重并限制数量）
+      setRecentSearches(prev => {
+        const filtered = prev.filter(t => t !== searchQuery)
+        return [searchQuery, ...filtered].slice(0, 8)
+      })
+    } catch (error) {
+      console.error('Search failed:', error)
       setResults([])
+    } finally {
       setIsSearching(false)
+    }
+  }, [selectedGraphId, activeFilter])
+
+  // 处理搜索输入（带防抖）
+  const handleSearch = useCallback((searchQuery: string) => {
+    setQuery(searchQuery)
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    if (!searchQuery.trim()) {
+      setResults([])
+      setShowRecent(true)
+      return
+    }
+
+    debounceTimerRef.current = window.setTimeout(() => {
+      performSearch(searchQuery)
     }, 400)
-  }
+  }, [performSearch])
+
+  // 处理快速搜索按钮点击
+  const handleQuickSearch = useCallback((term: string) => {
+    setQuery(term)
+    performSearch(term)
+  }, [performSearch])
+
+  // 处理筛选器变化
+  useEffect(() => {
+    if (query.trim()) {
+      performSearch(query)
+    }
+  }, [activeFilter])
 
   const filteredResults =
     activeFilter === 'all'
       ? results
       : results.filter((r) => r.type === activeFilter)
+
+  const selectedGraph = graphs.find(g => g.id === selectedGraphId)
 
   return (
     <div className="h-full flex flex-col gap-6" style={{ maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto' }}>
@@ -77,7 +227,78 @@ export default function SearchView() {
           <Sparkles className="w-7 h-7 text-white" />
         </motion.div>
         <h1 className="text-2xl font-semibold text-[#f0f4f8]" style={{ marginBottom: '4px' }}>知识搜索</h1>
-        <p className="text-[#64748b] text-sm">搜索图谱中的实体、关系或文档</p>
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-[#64748b] text-sm">搜索图谱中的实体或关系</p>
+          {selectedGraph && (
+            <span className="text-[#00b4d8] text-sm">· {selectedGraph.name}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Graph Selector */}
+      <div className="flex justify-center">
+        <div className="relative graph-selector w-full max-w-md">
+          <motion.button
+            className="w-full flex items-center gap-2 neo-card rounded-lg text-sm justify-between hover:border-[#00b4d8]/50 transition-colors"
+            style={{ padding: '8px 12px' }}
+            onClick={() => setGraphDropdownOpen(!graphDropdownOpen)}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
+                <Network className="w-3 h-3 text-[#00b4d8]" />
+              </div>
+              <span className="text-[#f0f4f8] truncate">
+                {selectedGraph ? selectedGraph.name : '选择知识图谱'}
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+          </motion.button>
+
+          <AnimatePresence>
+            {graphDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute top-full left-0 right-0 mt-2 neo-card-elevated rounded-lg z-20 max-h-[240px] overflow-y-auto"
+                style={{ padding: '8px 8px' }}
+              >
+                {graphs.map((graph) => (
+                  <button
+                    key={graph.id}
+                    className="w-full text-left text-sm flex items-center gap-2 whitespace-nowrap rounded-lg transition-all hover:bg-[#232d3f]"
+                    style={{ padding: '6px 10px' }}
+                    onClick={() => {
+                      setSelectedGraphId(graph.id)
+                      setGraphDropdownOpen(false)
+                      // 清空搜索结果
+                      setResults([])
+                      setQuery('')
+                      setShowRecent(true)
+                    }}
+                  >
+                    <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center shrink-0">
+                      <Network className="w-3 h-3 text-[#00b4d8]" />
+                    </div>
+                    <span className="text-[#f0f4f8] truncate">{graph.name}</span>
+                    {graph.is_default && (
+                      <span className="px-1.5 py-0.5 text-xs bg-[#00c853]/20 text-[#00c853] rounded shrink-0">默认</span>
+                    )}
+                    {selectedGraphId === graph.id && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#00c853] ml-auto shrink-0" />
+                    )}
+                  </button>
+                ))}
+                {graphs.length === 0 && (
+                  <div className="text-center py-4 text-[#64748b] text-sm">
+                    暂无知识图谱
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -88,15 +309,16 @@ export default function SearchView() {
             <input
               type="text"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                handleSearch(e.target.value)
-              }}
+              onChange={(e) => handleSearch(e.target.value)}
               placeholder="输入关键词搜索..."
               className="flex-1 bg-transparent outline-none text-[#f0f4f8] placeholder:text-[#64748b] min-w-0"
               style={{ paddingTop: '8px', paddingBottom: '8px', fontSize: '14px' }}
+              disabled={!selectedGraphId}
             />
-            {query && (
+            {isSearching && (
+              <Loader2 className="w-4 h-4 text-[#00b4d8] animate-spin shrink-0" />
+            )}
+            {query && !isSearching && (
               <motion.button
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -117,7 +339,8 @@ export default function SearchView() {
             style={{ padding: '4px 12px' }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => handleSearch(query)}
+            onClick={() => performSearch(query)}
+            disabled={!selectedGraphId || !query.trim()}
           >
             <Search className="w-4 h-4" />
             搜索
@@ -127,7 +350,7 @@ export default function SearchView() {
 
       {/* Recent Searches */}
       <AnimatePresence>
-        {showRecent && !query && (
+        {showRecent && !query && recentSearches.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -145,10 +368,8 @@ export default function SearchView() {
                   style={{ padding: '8px 12px' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    setQuery(term)
-                    handleSearch(term)
-                  }}
+                  onClick={() => handleQuickSearch(term)}
+                  disabled={!selectedGraphId}
                 >
                   {term}
                 </motion.button>
@@ -240,8 +461,45 @@ export default function SearchView() {
                         </div>
                         <p className="text-sm text-[#94a3b8] line-clamp-2" style={{ marginBottom: '8px' }}>{result.description}</p>
 
+                        {/* Related Entities (for entity type) */}
+                        {result.type === 'entity' && result.related_entities && result.related_entities.length > 0 && (
+                          <div className="flex flex-wrap gap-2" style={{ marginBottom: '8px' }}>
+                            <span className="text-xs text-[#64748b]">关联:</span>
+                            {result.related_entities.slice(0, 4).map((rel, idx) => (
+                              <span
+                                key={idx}
+                                className="text-xs px-2 py-0.5 rounded bg-[#1a2332] text-[#94a3b8] border border-[#2a3548]"
+                              >
+                                {rel.relation_type} → {rel.entity_name}
+                              </span>
+                            ))}
+                            {result.related_entities.length > 4 && (
+                              <span className="text-xs text-[#64748b]">
+                                +{result.related_entities.length - 4} 更多
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Relation source/target (for relation type) */}
+                        {result.type === 'relation' && (
+                          <div className="flex items-center gap-2 text-sm" style={{ marginBottom: '8px' }}>
+                            {result.source_entity && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-[#1a2332] text-[#94a3b8]">
+                                {result.source_entity.name}
+                              </span>
+                            )}
+                            <ArrowRight className="w-3 h-3 text-[#22c55e]" />
+                            {result.target_entity && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-[#1a2332] text-[#94a3b8]">
+                                {result.target_entity.name}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         {/* Metadata */}
-                        {result.metadata && (
+                        {result.metadata && Object.keys(result.metadata).length > 0 && (
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
                             {Object.entries(result.metadata).map(([key, value]) => (
                               <span key={key} className="text-xs text-[#64748b]">
@@ -289,6 +547,22 @@ export default function SearchView() {
           </div>
           <p className="text-[#94a3b8]">未找到与 "{query}" 相关的结果</p>
           <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>尝试使用其他关键词搜索</p>
+        </motion.div>
+      )}
+
+      {/* No Graph Selected State */}
+      {!selectedGraphId && !isSearching && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center flex-1 flex items-center justify-center"
+          style={{ padding: '64px 0' }}
+        >
+          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mx-auto border border-[#2a3548]" style={{ padding: '12px', marginBottom: '16px' }}>
+            <Network className="w-8 h-8 text-[#64748b]" />
+          </div>
+          <p className="text-[#94a3b8]">请先选择一个知识图谱</p>
+          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>从上方下拉菜单中选择要搜索的知识图谱</p>
         </motion.div>
       )}
     </div>
