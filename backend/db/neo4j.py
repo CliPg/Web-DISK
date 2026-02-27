@@ -218,22 +218,29 @@ class Neo4jRepository:
 
         with driver.session() as session:
             if search_type in ("all", "entity"):
-                # 搜索实体
+                # 搜索实体 - 不区分大小写，并返回更多结果用于排序
                 entity_query = """
                     MATCH (n {graph_id: $graph_id})
-                    WHERE n.name CONTAINS $search_query OR n.description CONTAINS $search_query
+                    WHERE toLower(coalesce(n.name, '')) CONTAINS toLower($search_query)
+                       OR toLower(coalesce(n.description, '')) CONTAINS toLower($search_query)
                     RETURN n, elementId(n) as entity_id
-                    LIMIT $limit
+                    LIMIT $limit_more
                 """
                 entity_result = session.run(
                     entity_query,
                     graph_id=graph_id,
                     search_query=query,
-                    limit=limit
+                    limit_more=limit * 3  # 获取更多结果用于排序
                 )
 
+                entity_results = []
                 for record in entity_result:
                     node = record["n"]
+                    name = node.get("name", "")
+                    description = node.get("description", "")
+
+                    # 计算相关性评分
+                    relevance = self._calculate_relevance(query, name, description)
 
                     # 获取关联实体（最多5个）
                     related_query = """
@@ -259,44 +266,57 @@ class Neo4jRepository:
                             "entity_labels": rel_record.get("target_labels", [])
                         })
 
-                    results.append({
+                    entity_results.append({
                         "id": record["entity_id"],
                         "type": "entity",
-                        "name": node.get("name", ""),
+                        "name": name,
                         "label": node.get("label", ""),
-                        "description": node.get("description", ""),
+                        "description": description,
                         "labels": list(node.labels),
                         "properties": dict(node),
                         "related_entities": related_entities,
-                        "relevance": 1.0  # 模糊搜索默认相关性
+                        "relevance": relevance
                     })
 
+                # 按相关性排序并取前 limit 个
+                entity_results.sort(key=lambda x: x["relevance"], reverse=True)
+                results.extend(entity_results[:limit])
+
             if search_type in ("all", "relation"):
-                # 搜索关系
+                # 搜索关系 - 不区分大小写
                 relation_query = """
                     MATCH (a {graph_id: $graph_id})-[r]->(b {graph_id: $graph_id})
-                    WHERE r.name CONTAINS $search_query OR r.description CONTAINS $search_query OR type(r) CONTAINS $search_query
+                    WHERE toLower(coalesce(r.name, '')) CONTAINS toLower($search_query)
+                       OR toLower(coalesce(r.description, '')) CONTAINS toLower($search_query)
+                       OR toLower(type(r)) CONTAINS toLower($search_query)
                     RETURN elementId(r) as relation_id, type(r) as rel_type,
                            r.name as rel_name, r.description as rel_description,
                            properties(r) as rel_props,
                            elementId(a) as source_id, a.name as source_name,
                            elementId(b) as target_id, b.name as target_name
-                    LIMIT $limit
+                    LIMIT $limit_more
                 """
                 relation_result = session.run(
                     relation_query,
                     graph_id=graph_id,
                     search_query=query,
-                    limit=limit
+                    limit_more=limit * 3
                 )
 
+                relation_results = []
                 for record in relation_result:
-                    results.append({
+                    rel_name = record.get("rel_name", record["rel_type"])
+                    rel_desc = record.get("rel_description", "")
+
+                    # 计算相关性评分
+                    relevance = self._calculate_relevance(query, rel_name, rel_desc, record["rel_type"])
+
+                    relation_results.append({
                         "id": record["relation_id"],
                         "type": "relation",
-                        "name": record.get("rel_name", record["rel_type"]),
+                        "name": rel_name,
                         "label": record["rel_type"],
-                        "description": record.get("rel_description", ""),
+                        "description": rel_desc,
                         "properties": record["rel_props"],
                         "source_entity": {
                             "id": record["source_id"],
@@ -306,10 +326,62 @@ class Neo4jRepository:
                             "id": record["target_id"],
                             "name": record.get("target_name", "")
                         },
-                        "relevance": 1.0
+                        "relevance": relevance
                     })
 
+                # 按相关性排序
+                relation_results.sort(key=lambda x: x["relevance"], reverse=True)
+                results.extend(relation_results[:limit])
+
+        # 最终按相关性排序所有结果
+        results.sort(key=lambda x: x["relevance"], reverse=True)
+
         return results
+
+    def _calculate_relevance(self, query: str, name: str, description: str = "", rel_type: str = "") -> float:
+        """计算搜索相关性评分
+
+        评分规则：
+        - 完全匹配（不区分大小写）：1.0
+        - 名称完全包含：0.9
+        - 名称开头匹配：0.8
+        - 关系类型完全匹配：0.85
+        - 描述包含：0.6
+        - 其他匹配：0.5
+        """
+        if not query:
+            return 0.5
+
+        query_lower = query.lower()
+        name_lower = (name or "").lower()
+        desc_lower = (description or "").lower()
+        rel_type_lower = (rel_type or "").lower()
+
+        # 完全匹配
+        if name_lower == query_lower or rel_type_lower == query_lower:
+            return 1.0
+
+        # 名称完全包含查询词
+        if query_lower in name_lower:
+            if name_lower.startswith(query_lower):
+                return 0.9
+            return 0.8
+
+        # 关系类型包含
+        if query_lower in rel_type_lower:
+            return 0.85
+
+        # 描述包含
+        if query_lower in desc_lower:
+            return 0.6
+
+        # 部分匹配（查询词被包含在名称中）
+        words = query_lower.split()
+        for word in words:
+            if word in name_lower:
+                return 0.5
+
+        return 0.4
 
     def get_related_entities(
         self,
