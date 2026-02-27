@@ -203,7 +203,7 @@ export default function SearchView() {
     setSelectedResult(null)
   }, [])
 
-  // 执行搜索
+  // 执行搜索（不添加到记录）
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!selectedGraphId) {
       console.warn('No graph selected')
@@ -231,12 +231,6 @@ export default function SearchView() {
 
       const transformedResults = data.results.map(transformSearchResult)
       setResults(transformedResults)
-
-      // 添加到最近搜索（去重并限制数量）
-      setRecentSearches(prev => {
-        const filtered = prev.filter(t => t !== searchQuery)
-        return [searchQuery, ...filtered].slice(0, 8)
-      })
     } catch (error) {
       console.error('Search failed:', error)
       setResults([])
@@ -245,7 +239,16 @@ export default function SearchView() {
     }
   }, [selectedGraphId, activeFilter])
 
-  // 处理搜索输入（带防抖）
+  // 添加到最近搜索记录
+  const addToRecentSearches = useCallback((term: string) => {
+    if (!term.trim()) return
+    setRecentSearches(prev => {
+      const filtered = prev.filter(t => t !== term)
+      return [term, ...filtered].slice(0, 8)
+    })
+  }, [])
+
+  // 处理搜索输入（带防抖，不添加记录）
   const handleSearch = useCallback((searchQuery: string) => {
     setQuery(searchQuery)
 
@@ -264,11 +267,19 @@ export default function SearchView() {
     }, 400)
   }, [performSearch])
 
-  // 处理快速搜索按钮点击
+  // 处理按下回车键或点击搜索按钮（添加记录）
+  const handleSearchSubmit = useCallback(() => {
+    if (!query.trim()) return
+    addToRecentSearches(query)
+    performSearch(query)
+  }, [query, addToRecentSearches, performSearch])
+
+  // 处理快速搜索按钮点击（添加记录）
   const handleQuickSearch = useCallback((term: string) => {
     setQuery(term)
+    addToRecentSearches(term)
     performSearch(term)
-  }, [performSearch])
+  }, [addToRecentSearches, performSearch])
 
   // 处理筛选器变化
   useEffect(() => {
@@ -377,6 +388,11 @@ export default function SearchView() {
               type="text"
               value={query}
               onChange={(e) => handleSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchSubmit()
+                }
+              }}
               placeholder="输入关键词搜索..."
               className="flex-1 bg-transparent outline-none text-[#f0f4f8] placeholder:text-[#64748b] min-w-0"
               style={{ paddingTop: '8px', paddingBottom: '8px', fontSize: '14px' }}
@@ -406,7 +422,7 @@ export default function SearchView() {
             style={{ padding: '4px 12px' }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => performSearch(query)}
+            onClick={handleSearchSubmit}
             disabled={!selectedGraphId || !query.trim()}
           >
             <Search className="w-4 h-4" />
