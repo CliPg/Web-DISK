@@ -13,11 +13,16 @@ import {
   Network,
   ChevronDown,
   Loader2,
+  Trash2,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { SearchResult, KnowledgeGraph } from '../types'
 import { kgApi, graphsApi } from '../services/api'
 import { useSelectedGraph } from '../hooks/useSelectedGraph'
+
+// localStorage keys
+const SEARCH_STATE_KEY = 'searchViewState'
+const RECENT_SEARCHES_KEY = 'recentSearches'
 
 const typeFilters = [
   { value: 'all', label: '全部' },
@@ -89,7 +94,7 @@ export default function SearchView() {
   const [showRecent, setShowRecent] = useState(true)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('recentSearches')
+      const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
       return saved ? JSON.parse(saved) : ['深度学习', 'Transformer', '神经网络', '注意力机制']
     }
     return ['深度学习', 'Transformer', '神经网络', '注意力机制']
@@ -97,6 +102,8 @@ export default function SearchView() {
 
   // 防抖定时器
   const debounceTimerRef = useRef<number | null>(null)
+  // 是否已加载保存的状态
+  const [stateLoaded, setStateLoaded] = useState(false)
 
   // 加载知识图谱列表
   useEffect(() => {
@@ -126,12 +133,62 @@ export default function SearchView() {
     }
   }, [graphDropdownOpen])
 
+  // 保存搜索状态到 localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stateToSave = {
+        query,
+        activeFilter,
+        results,
+        showRecent,
+        timestamp: Date.now(),
+      }
+      localStorage.setItem(SEARCH_STATE_KEY, JSON.stringify(stateToSave))
+    }
+  }, [query, activeFilter, results, showRecent])
+
   // 保存最近搜索到 localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('recentSearches', JSON.stringify(recentSearches))
+      localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recentSearches))
     }
   }, [recentSearches])
+
+  // 加载保存的搜索状态（只在组件挂载时执行一次）
+  useEffect(() => {
+    if (stateLoaded) return
+
+    if (typeof window !== 'undefined') {
+      const savedState = localStorage.getItem(SEARCH_STATE_KEY)
+      if (savedState) {
+        try {
+          const state = JSON.parse(savedState)
+          // 只在最近30分钟内的状态才恢复
+          const thirtyMinutes = 30 * 60 * 1000
+          if (state.timestamp && Date.now() - state.timestamp < thirtyMinutes) {
+            setQuery(state.query || '')
+            setActiveFilter(state.activeFilter || 'all')
+            setResults(state.results || [])
+            setShowRecent(state.showRecent ?? true)
+          }
+        } catch (e) {
+          console.error('Failed to load saved state:', e)
+        }
+      }
+    }
+    setStateLoaded(true)
+  }, [])
+
+  // 删除单个搜索记录
+  const deleteRecentSearch = useCallback((term: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRecentSearches(prev => prev.filter(t => t !== term))
+  }, [])
+
+  // 清空所有搜索记录
+  const clearAllRecentSearches = useCallback(() => {
+    setRecentSearches([])
+  }, [])
 
   // 执行搜索
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -215,29 +272,10 @@ export default function SearchView() {
   const selectedGraph = graphs.find(g => g.id === selectedGraphId)
 
   return (
-    <div className="h-full flex flex-col gap-6" style={{ maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto' }}>
-      {/* Header */}
-      <div className="text-center" style={{ paddingTop: '16px' }}>
-        <motion.div
-          className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#0096c7] shadow-lg"
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          style={{ padding: '8px', marginBottom: '16px' }}
-        >
-          <Sparkles className="w-7 h-7 text-white" />
-        </motion.div>
-        <h1 className="text-2xl font-semibold text-[#f0f4f8]" style={{ marginBottom: '4px' }}>知识搜索</h1>
-        <div className="flex items-center justify-center gap-2">
-          <p className="text-[#64748b] text-sm">搜索图谱中的实体或关系</p>
-          {selectedGraph && (
-            <span className="text-[#00b4d8] text-sm">· {selectedGraph.name}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Graph Selector */}
-      <div className="flex justify-center">
-        <div className="relative graph-selector w-full max-w-md">
+    <div className="h-full flex flex-col gap-6" style={{ maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto', position: 'relative' }}>
+      {/* Graph Selector - 左上角绝对定位 */}
+      <div className="absolute top-0 left-0 z-10" style={{ marginTop: '0' }}>
+        <div className="relative graph-selector" style={{ width: '220px' }}>
           <motion.button
             className="w-full flex items-center gap-2 neo-card rounded-lg text-sm justify-between hover:border-[#00b4d8]/50 transition-colors"
             style={{ padding: '8px 12px' }}
@@ -252,7 +290,7 @@ export default function SearchView() {
                 {selectedGraph ? selectedGraph.name : '选择知识图谱'}
               </span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform shrink-0 ${graphDropdownOpen ? 'rotate-180' : ''}`} />
           </motion.button>
 
           <AnimatePresence>
@@ -298,6 +336,22 @@ export default function SearchView() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Header */}
+      <div className="text-center" style={{ paddingTop: '16px' }}>
+        <motion.div
+          className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#0096c7] shadow-lg"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          style={{ padding: '8px', marginBottom: '16px' }}
+        >
+          <Sparkles className="w-7 h-7 text-white" />
+        </motion.div>
+        <h1 className="text-2xl font-semibold text-[#f0f4f8]" style={{ marginBottom: '4px' }}>知识搜索</h1>
+        <div className="flex items-center justify-center gap-2">
+          <p className="text-[#64748b] text-sm">搜索图谱中的实体或关系</p>
         </div>
       </div>
 
@@ -356,23 +410,43 @@ export default function SearchView() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="flex items-center gap-2" style={{ marginBottom: '12px' }}>
-              <Clock className="w-4 h-4 text-[#64748b]" />
-              <span className="text-sm text-[#64748b]">最近搜索</span>
+            <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#64748b]" />
+                <span className="text-sm text-[#64748b]">最近搜索</span>
+              </div>
+              <motion.button
+                className="text-xs text-[#64748b] hover:text-[#f0f4f8] flex items-center gap-1 transition-colors"
+                onClick={clearAllRecentSearches}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Trash2 className="w-3 h-3" />
+                清空
+              </motion.button>
             </div>
             <div className="flex flex-wrap gap-2">
               {recentSearches.map((term) => (
-                <motion.button
+                <motion.div
                   key={term}
-                  className="neo-card rounded-lg text-sm text-[#94a3b8] hover:text-[#f0f4f8] hover:border-[#3b4a61]"
-                  style={{ padding: '8px 12px' }}
+                  className="neo-card rounded-lg flex items-center gap-2 group"
                   whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleQuickSearch(term)}
-                  disabled={!selectedGraphId}
+                  style={{ padding: '6px 10px' }}
                 >
-                  {term}
-                </motion.button>
+                  <button
+                    className="text-sm text-[#94a3b8] hover:text-[#f0f4f8] flex-1"
+                    onClick={() => handleQuickSearch(term)}
+                    disabled={!selectedGraphId}
+                  >
+                    {term}
+                  </button>
+                  <motion.button
+                    className="w-5 h-5 rounded flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#2a3548] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    onClick={(e) => deleteRecentSearch(term, e)}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <X className="w-3 h-3" />
+                  </motion.button>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -425,7 +499,7 @@ export default function SearchView() {
       {/* Results */}
       <AnimatePresence mode="popLayout">
         {!isSearching && filteredResults.length > 0 && (
-          <motion.div className="space-y-3 flex-1 overflow-y-auto" style={{ paddingBottom: '16px' }}>
+          <motion.div className="flex-1 overflow-y-auto" style={{ paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredResults.map((result, index) => {
               const Icon = typeIcons[result.type]
               const color = typeColors[result.type]
@@ -562,7 +636,7 @@ export default function SearchView() {
             <Network className="w-8 h-8 text-[#64748b]" />
           </div>
           <p className="text-[#94a3b8]">请先选择一个知识图谱</p>
-          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>从上方下拉菜单中选择要搜索的知识图谱</p>
+          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>从左上角下拉菜单中选择要搜索的知识图谱</p>
         </motion.div>
       )}
     </div>
