@@ -14,6 +14,8 @@ import {
   ChevronDown,
   Loader2,
   Trash2,
+  Info,
+  Link2,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { SearchResult, KnowledgeGraph } from '../types'
@@ -90,6 +92,7 @@ export default function SearchView() {
   const [query, setQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('all')
   const [results, setResults] = useState<SearchResult[]>([])
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [showRecent, setShowRecent] = useState(true)
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
@@ -190,6 +193,16 @@ export default function SearchView() {
     setRecentSearches([])
   }, [])
 
+  // 处理点击搜索结果
+  const handleResultClick = useCallback((result: SearchResult) => {
+    setSelectedResult(result)
+  }, [])
+
+  // 关闭详情面板
+  const closeDetailPanel = useCallback(() => {
+    setSelectedResult(null)
+  }, [])
+
   // 执行搜索
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!selectedGraphId) {
@@ -274,7 +287,7 @@ export default function SearchView() {
   return (
     <div className="h-full flex flex-col gap-6" style={{ maxWidth: '900px', marginLeft: 'auto', marginRight: 'auto', position: 'relative' }}>
       {/* Graph Selector - 左上角绝对定位 */}
-      <div className="absolute top-0 left-0 z-10" style={{ marginTop: '0' }}>
+      <div className="absolute top-0 left-0 z-10" style={{ marginTop: '16px' }}>
         <div className="relative graph-selector" style={{ width: '220px' }}>
           <motion.button
             className="w-full flex items-center gap-2 neo-card rounded-lg text-sm justify-between hover:border-[#00b4d8]/50 transition-colors"
@@ -499,20 +512,30 @@ export default function SearchView() {
       {/* Results */}
       <AnimatePresence mode="popLayout">
         {!isSearching && filteredResults.length > 0 && (
-          <motion.div className="flex-1 overflow-y-auto" style={{ paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {filteredResults.map((result, index) => {
-              const Icon = typeIcons[result.type]
-              const color = typeColors[result.type]
+          <div className="flex-1 flex gap-4 overflow-hidden">
+            <motion.div
+              className="flex-1 overflow-y-auto"
+              style={{ paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}
+            >
+              {filteredResults.map((result, index) => {
+                const Icon = typeIcons[result.type]
+                const color = typeColors[result.type]
+                const isSelected = selectedResult?.id === result.id
 
-              return (
-                <motion.div
-                  key={result.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.04 }}
-                >
-                  <NeoCard className="cursor-pointer group" hover style={{ padding: '16px' }}>
+                return (
+                  <motion.div
+                    key={result.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ delay: index * 0.04 }}
+                  >
+                    <NeoCard
+                      className="cursor-pointer group"
+                      hover
+                      style={{ padding: '16px', borderColor: isSelected ? color : undefined }}
+                      onClick={() => handleResultClick(result)}
+                    >
                     <div className="flex items-start gap-4">
                       {/* Type Icon */}
                       <div
@@ -604,7 +627,187 @@ export default function SearchView() {
                 </motion.div>
               )
             })}
-          </motion.div>
+            </motion.div>
+
+            {/* Detail Panel */}
+            <AnimatePresence mode="wait">
+              {selectedResult ? (
+                <motion.div
+                  key="detail-panel"
+                  initial={{ opacity: 0, x: 20, width: 0 }}
+                  animate={{ opacity: 1, x: 0, width: 360 }}
+                  exit={{ opacity: 0, x: 20, width: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="shrink-0"
+                >
+                  <NeoCard className="h-full p-5" variant="elevated" style={{ width: '340px', overflowY: 'auto' }}>
+                    {/* Header */}
+                    <div className="flex items-start justify-between" style={{ marginBottom: '20px' }}>
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center"
+                        style={{ backgroundColor: typeColors[selectedResult.type] }}
+                      >
+                        <Info className="w-5 h-5 text-white" />
+                      </div>
+                      <motion.button
+                        className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={closeDetailPanel}
+                      >
+                        <X className="w-4 h-4" />
+                      </motion.button>
+                    </div>
+
+                    {/* Title & Type */}
+                    <h2 className="text-lg font-semibold text-[#f0f4f8]" style={{ marginBottom: '8px' }}>
+                      {selectedResult.title}
+                    </h2>
+                    <span
+                      className="inline-block px-2.5 py-1 rounded-md text-xs font-medium text-white"
+                      style={{ backgroundColor: typeColors[selectedResult.type], marginBottom: '16px' }}
+                    >
+                      {selectedResult.type === 'entity' ? '实体' : '关系'}
+                    </span>
+
+                    {/* Description */}
+                    <p className="text-sm text-[#94a3b8] leading-relaxed" style={{ marginBottom: '24px' }}>
+                      {selectedResult.description || '暂无描述'}
+                    </p>
+
+                    {/* Related Entities (for entity type) */}
+                    {selectedResult.type === 'entity' && selectedResult.related_entities && selectedResult.related_entities.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                          <Link2 className="w-4 h-4 text-[#00b4d8]" />
+                          关联实体 ({selectedResult.related_entities.length})
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                          {selectedResult.related_entities.map((rel, idx) => (
+                            <motion.div
+                              key={idx}
+                              className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] hover:bg-[#111827] border border-[#2a3548] hover:border-[#3b4a61] cursor-pointer transition-all"
+                              whileHover={{ x: 2 }}
+                            >
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                style={{
+                                  backgroundColor: '#3b82f620',
+                                }}
+                              >
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{
+                                    backgroundColor: '#3b82f6',
+                                  }}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-[#f0f4f8] truncate">
+                                  {rel.entity_name}
+                                </p>
+                                <p className="text-xs text-[#64748b]" style={{ marginTop: '2px' }}>
+                                  {rel.relation_type || rel.relation_name}
+                                </p>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Relation Details (for relation type) */}
+                    {selectedResult.type === 'relation' && (
+                      <div>
+                        <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                          <Link2 className="w-4 h-4 text-[#00b4d8]" />
+                          连接实体
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {selectedResult.source_entity && (
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#3b82f620' }}>
+                                <Circle className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-[#64748b]">起始实体</p>
+                                <p className="text-sm font-medium text-[#f0f4f8]">
+                                  {selectedResult.source_entity.name}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex justify-center">
+                            <ArrowRight className="w-5 h-5 text-[#22c55e]" />
+                          </div>
+                          {selectedResult.target_entity && (
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#3b82f620' }}>
+                                <Circle className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-[#64748b]">目标实体</p>
+                                <p className="text-sm font-medium text-[#f0f4f8]">
+                                  {selectedResult.target_entity.name}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Properties */}
+                    {selectedResult.properties && Object.keys(selectedResult.properties).length > 0 && (
+                      <div style={{ marginTop: '24px' }}>
+                        <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                          <Info className="w-4 h-4 text-[#00b4d8]" />
+                          属性信息
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {Object.entries(selectedResult.properties)
+                            .filter(([key]) => !['name', 'label', 'description', 'embedding', 'graph_id'].includes(key))
+                            .slice(0, 10)
+                            .map(([key, value]) => (
+                            <div key={key} className="flex justify-between text-sm">
+                              <span className="text-[#64748b]">{key}:</span>
+                              <span className="text-[#94a3b8] text-right max-w-[180px] truncate">
+                                {String(value)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Labels */}
+                    {selectedResult.labels && selectedResult.labels.length > 0 && (
+                      <div style={{ marginTop: '16px' }}>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedResult.labels.map((label) => (
+                            <span
+                              key={label}
+                              className="px-2 py-1 rounded-md text-xs bg-[#1a2332] text-[#94a3b8] border border-[#2a3548]"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </NeoCard>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="placeholder"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  style={{ width: '0' }}
+                />
+              )}
+            </AnimatePresence>
+          </div>
         )}
       </AnimatePresence>
 
