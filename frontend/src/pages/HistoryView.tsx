@@ -99,7 +99,6 @@ export default function HistoryView() {
   const [documents, setDocuments] = useState<KGDocument[]>([])
   const [graphs, setGraphs] = useState<{ id: string; name: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activeFilter, setActiveFilter] = useState<string>('all')
   const [selectedDoc, setSelectedDoc] = useState<KGDocument | null>(null)
   const [currentTime, setCurrentTime] = useState(Date.now())
 
@@ -214,10 +213,6 @@ export default function HistoryView() {
   const totalInputTokens = documents.reduce((sum, d) => sum + (d.inputTokens || 0), 0)
   const totalOutputTokens = documents.reduce((sum, d) => sum + (d.outputTokens || 0), 0)
 
-  const filteredDocuments = activeFilter === 'all'
-    ? documents
-    : documents.filter((d) => d.status === activeFilter)
-
   return (
     <div className="h-full flex flex-col gap-6">
       {/* Header */}
@@ -270,7 +265,7 @@ export default function HistoryView() {
         <div className="grid grid-cols-2 gap-4">
           <NeoCard className="p-4" hover>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center shrink-0" style={{ marginLeft: '4px' }}>
                 <TrendingUp className="w-4 h-4 text-[#3b82f6]" />
               </div>
               <div>
@@ -281,7 +276,7 @@ export default function HistoryView() {
           </NeoCard>
           <NeoCard className="p-4" hover>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#00c853]/10 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-[#00c853]/10 flex items-center justify-center shrink-0" style={{ marginLeft: '4px' }}>
                 <TrendingUp className="w-4 h-4 text-[#00c853]" />
               </div>
               <div>
@@ -293,37 +288,15 @@ export default function HistoryView() {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 neo-card" style={{ padding: '12px' }}>
-        {stats.slice(0, 2).map((stat) => (
-          <button
-            key={stat.key}
-            type="button"
-            className={`rounded-lg flex items-center justify-center gap-2 transition-all ${
-              activeFilter === stat.key
-                ? 'bg-[#1a2332] border border-[#2a3548]'
-                : 'hover:bg-[#1a2332]/50'
-            }`}
-            style={{ minWidth: '100px', minHeight: '36px', padding: '6px 16px' }}
-            onClick={() => setActiveFilter(stat.key)}
-          >
-            <stat.icon className={`w-4 h-4 ${activeFilter === stat.key ? 'text-[#00b4d8]' : 'text-[#94a3b8]'}`} />
-            <span className={`text-sm ${activeFilter === stat.key ? 'text-[#f0f4f8] font-medium' : 'text-[#94a3b8]'}`}>
-              {stat.label}
-            </span>
-          </button>
-        ))}
-      </div>
-
       {/* History List */}
       <NeoCard className="flex-1 overflow-hidden" variant="elevated">
         {isLoading ? (
           <div className="h-full flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 text-[#64748b] animate-spin" />
           </div>
-        ) : filteredDocuments.length > 0 ? (
+        ) : documents.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
-            {filteredDocuments.map((doc, index) => {
+            {documents.map((doc, index) => {
               const status = statusConfig[doc.status]
               const StatusIcon = status.icon
               const fileConfig = fileTypeConfig[doc.fileType] || fileTypeConfig.pdf
@@ -333,7 +306,7 @@ export default function HistoryView() {
                 <div
                   key={doc.id}
                   className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 group transition-colors"
-                  style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0', minHeight: '60px', paddingLeft: '8px', paddingRight: '8px' }}
+                  style={{ marginBottom: index < documents.length - 1 ? '8px' : '0', minHeight: '60px', paddingLeft: '8px', paddingRight: '8px' }}
                 >
                   {/* File Icon */}
                   <div className={`w-12 h-12 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
