@@ -34,6 +34,10 @@ export interface KGDocument {
   // 任务时间信息（用于计算构建耗时）
   taskStartedAt?: string
   taskCompletedAt?: string
+  // Token 消耗信息
+  inputTokens?: number
+  outputTokens?: number
+  totalTokens?: number
 }
 
 export interface PipelineStage {

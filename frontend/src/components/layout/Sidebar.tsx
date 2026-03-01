@@ -8,6 +8,8 @@ import {
   Settings,
   Database,
   Network,
+  Clock,
+  History,
 } from 'lucide-react'
 
 const navItems = [
@@ -15,6 +17,7 @@ const navItems = [
   { icon: Network, label: 'Graphs', path: '/graphs'},
   { icon: FileText, label: 'Document', path: '/documents'},
   { icon: Search, label: 'Search', path: '/search'},
+  { icon: Clock, label: 'History', path: '/history'},
   { icon: Activity, label: 'Monitor', path: '/pipeline'},
 ]
 
