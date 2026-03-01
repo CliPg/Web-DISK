@@ -71,6 +71,10 @@ class DocumentResponse(BaseModel):
     # 任务时间信息
     task_started_at: Optional[str] = None  # 改为字符串类型，直接使用 ISO 格式
     task_completed_at: Optional[str] = None  # 改为字符串类型，直接使用 ISO 格式
+    # Token 消耗信息
+    input_tokens: Optional[int] = 0
+    output_tokens: Optional[int] = 0
+    total_tokens: Optional[int] = 0
 
     class Config:
         from_attributes = False  # 禁用 from_attributes，因为我们手动构造数据
@@ -106,6 +110,8 @@ class TaskResponse(BaseModel):
     error_message: Optional[str] = None
     entities_count: int = 0  # 已提取的实体数
     relations_count: int = 0  # 已提取的关系数
+    input_tokens: int = 0  # 输入 token 数
+    output_tokens: int = 0  # 输出 token 数
     created_at: datetime
     started_at: Optional[datetime] = None
     updated_at: datetime

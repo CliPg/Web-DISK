@@ -159,6 +159,9 @@ async def list_documents(
             "graph_id": doc.graph_id,
             "task_started_at": latest_task.started_at.isoformat() if latest_task and latest_task.started_at else None,
             "task_completed_at": latest_task.completed_at.isoformat() if latest_task and latest_task.completed_at else None,
+            "input_tokens": latest_task.input_tokens if latest_task else 0,
+            "output_tokens": latest_task.output_tokens if latest_task else 0,
+            "total_tokens": (latest_task.input_tokens + latest_task.output_tokens) if latest_task else 0,
         }
         result.append(DocumentResponse(**doc_dict))
 
@@ -191,6 +194,9 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
         "graph_id": document.graph_id,
         "task_started_at": latest_task.started_at.isoformat() if latest_task and latest_task.started_at else None,
         "task_completed_at": latest_task.completed_at.isoformat() if latest_task and latest_task.completed_at else None,
+        "input_tokens": latest_task.input_tokens if latest_task else 0,
+        "output_tokens": latest_task.output_tokens if latest_task else 0,
+        "total_tokens": (latest_task.input_tokens + latest_task.output_tokens) if latest_task else 0,
     }
 
     return DocumentResponse(**doc_dict)

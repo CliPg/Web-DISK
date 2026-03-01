@@ -68,6 +68,10 @@ class Task(Base):
     message = Column(String, default="")
     error_message = Column(Text, nullable=True)
 
+    # Token 消耗信息
+    input_tokens = Column(Integer, default=0)
+    output_tokens = Column(Integer, default=0)
+
     # 知识图谱统计
     entities_count = Column(Integer, default=0)  # 已提取的实体数
     relations_count = Column(Integer, default=0)  # 已提取的关系数

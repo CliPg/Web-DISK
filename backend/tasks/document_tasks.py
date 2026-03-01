@@ -33,7 +33,7 @@ class CallbackTask(Task):
         self.neo4j_repo = Neo4jRepository()
 
 
-def update_task_progress(task_id: str, progress: float, current_step: str, message: str, status: Optional[TaskStatus] = None, entities_count: int = 0, relations_count: int = 0):
+def update_task_progress(task_id: str, progress: float, current_step: str, message: str, status: Optional[TaskStatus] = None, entities_count: int = 0, relations_count: int = 0, input_tokens: int = 0, output_tokens: int = 0):
     """更新任务进度到数据库"""
     from datetime import datetime
 
@@ -46,6 +46,8 @@ def update_task_progress(task_id: str, progress: float, current_step: str, messa
             task.message = message
             task.entities_count = entities_count
             task.relations_count = relations_count
+            task.input_tokens = input_tokens
+            task.output_tokens = output_tokens
             if status:
                 task.status = status
                 # 任务完成或失败时，设置 completed_at 时间
@@ -206,6 +208,15 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
 
         logger.info(f"Knowledge graph built: {len(final_kg.entities)} entities, {len(final_kg.relations)} relations")
 
+        # 获取 Token 使用统计
+        token_summary = disk.get_token_summary()
+        input_tokens = 0
+        output_tokens = 0
+        if token_summary:
+            input_tokens = token_summary.get('total_input_tokens', 0)
+            output_tokens = token_summary.get('total_output_tokens', 0)
+            logger.info(f"Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {input_tokens + output_tokens}")
+
         # 计算新增的实体和关系（用于持久化）
         new_entities = final_kg.entities[original_entity_count:]
         new_relations = final_kg.relations[original_relation_count:]
@@ -213,7 +224,7 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         logger.info(f"New entities: {len(new_entities)}, new relations: {len(new_relations)}")
 
         # 持久化到Neo4j（只保存新增的实体和关系）
-        update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...")
+        update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...", input_tokens=input_tokens, output_tokens=output_tokens)
 
         from backend.core.config import settings
 
@@ -236,7 +247,9 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
             f"知识图谱构建完成！实体数: {len(final_kg.entities)}, 关系数: {len(final_kg.relations)}",
             TaskStatus.COMPLETED,
             entities_count=len(final_kg.entities),
-            relations_count=len(final_kg.relations)
+            relations_count=len(final_kg.relations),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens
         )
 
         # 更新文档状态

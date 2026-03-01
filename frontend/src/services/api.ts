@@ -55,6 +55,9 @@ export const documentsApi = {
       graph_id?: string
       task_started_at?: string
       task_completed_at?: string
+      input_tokens?: number
+      output_tokens?: number
+      total_tokens?: number
     }>
     total: number
   }> {
@@ -84,6 +87,9 @@ export const documentsApi = {
     updated_at: string
     completed_at?: string
     graph_id?: string
+    input_tokens?: number
+    output_tokens?: number
+    total_tokens?: number
   }> {
     const response = await fetch(`${API_BASE}/documents/${id}`)
     if (!response.ok) throw new Error('获取文档详情失败')

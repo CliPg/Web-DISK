@@ -13,6 +13,7 @@ import {
   GitBranch,
   Calendar,
   Hash,
+  X,
 } from 'lucide-react'
 import NeoCard from '../components/ui/GlassCard'
 import type { KGDocument } from '../types'
@@ -136,10 +137,10 @@ export default function HistoryView() {
           graphName: graph?.name,
           taskStartedAt: doc.task_started_at,
           taskCompletedAt: doc.task_completed_at,
-          // Token 数据（后端暂未提供，预留字段）
-          inputTokens: 0,
-          outputTokens: 0,
-          totalTokens: 0,
+          // Token 数据（从后端获取）
+          inputTokens: doc.input_tokens || 0,
+          outputTokens: doc.output_tokens || 0,
+          totalTokens: doc.total_tokens || 0,
           // 从图谱统计获取实体和关系数量
           entities: 0,
           relations: 0,
