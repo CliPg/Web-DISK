@@ -204,7 +204,6 @@ export default function HistoryView() {
   // 计算统计数据
   const stats = [
     { key: 'all', label: '全部', value: documents.length, color: '#f0f4f8', icon: Hash },
-    { key: 'completed', label: '已完成', value: documents.filter((d) => d.status === 'completed').length, color: '#00c853', icon: CheckCircle2 },
     { key: 'entities', label: '实体总数', value: documents.reduce((sum, d) => sum + (d.entities || 0), 0), color: '#3b82f6', icon: Network },
     { key: 'relations', label: '关系总数', value: documents.reduce((sum, d) => sum + (d.relations || 0), 0), color: '#a855f7', icon: GitBranch },
   ]
@@ -233,7 +232,7 @@ export default function HistoryView() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {stats.map((stat) => (
           <NeoCard key={stat.key} className="p-5" hover>
             <div className="flex items-center gap-3">
@@ -297,8 +296,6 @@ export default function HistoryView() {
         ) : documents.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
             {documents.map((doc, index) => {
-              const status = statusConfig[doc.status]
-              const StatusIcon = status.icon
               const fileConfig = fileTypeConfig[doc.fileType] || fileTypeConfig.pdf
               const buildTime = calculateBuildTime(doc.taskStartedAt, doc.taskCompletedAt)
 
@@ -317,10 +314,6 @@ export default function HistoryView() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
-                      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md ${status.bg}`}>
-                        <StatusIcon className={`w-3 h-3.5 ${status.color}`} />
-                        <span className={`text-xs font-medium ${status.color}`}>{status.label}</span>
-                      </div>
                     </div>
 
                     {/* Meta Info */}
