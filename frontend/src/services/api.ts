@@ -108,6 +108,43 @@ export const documentsApi = {
   },
 
   /**
+   * 批量构建文档
+   */
+  async batchBuild(documentIds: string[], graphId?: string): Promise<{
+    message: string
+    task_id: string
+    celery_task_id: string
+    document_count: number
+  }> {
+    const response = await fetch(`${API_BASE}/documents/batch-build`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        document_ids: documentIds,
+        graph_id: graphId,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || '批量构建失败')
+    }
+
+    return response.json()
+  },
+
+  /**
+   * 删除文档
+   */
+  async delete(id: string): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE}/documents/${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) throw new Error('删除文档失败')
+    return response.json()
+  },
+
+  /**
    * 开始处理文档
    */
   async startProcessing(id: string): Promise<{

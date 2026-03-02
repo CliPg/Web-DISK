@@ -290,3 +290,87 @@ async def start_processing(document_id: str, db: Session = Depends(get_db)):
         "task_id": task.id,
         "celery_task_id": celery_task.id
     }
+
+
+@router.post("/batch-build")
+async def batch_build_documents(
+    request: dict,
+    db: Session = Depends(get_db),
+):
+    """批量构建文档知识图谱
+
+    Args:
+        request: 包含 document_ids 和可选的 graph_id 的请求体
+    """
+    document_ids = request.get("document_ids", [])
+    graph_id = request.get("graph_id")
+
+    # 验证文档数量
+    if len(document_ids) == 0:
+        raise HTTPException(status_code=400, detail="请至少选择一个文档")
+
+    if len(document_ids) > 20:
+        raise HTTPException(status_code=400, detail="批量构建最多支持20个文档")
+
+    # 确定目标知识图谱
+    target_graph = None
+    if graph_id:
+        target_graph = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.id == graph_id).first()
+        if not target_graph:
+            raise HTTPException(status_code=400, detail="指定的知识图谱不存在")
+    else:
+        target_graph = ensure_default_graph(db)
+
+    # 验证文档存在并更新状态
+    documents = []
+    for doc_id in document_ids:
+        doc = db.query(DBDocument).filter(DBDocument.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail=f"文档不存在: {doc_id}")
+        documents.append(doc)
+
+    # 创建批量任务记录
+    batch_task = DBTask(
+        document_id=None,  # 批量任务没有关联单个文档
+        status=TaskStatus.PENDING,
+        current_step="等待开始",
+        message=f"批量构建 {len(documents)} 个文档",
+    )
+    db.add(batch_task)
+    db.commit()
+    db.refresh(batch_task)
+
+    # 提交Celery批量任务
+    try:
+        from backend.tasks.document_tasks import batch_build_documents
+        from datetime import datetime
+
+        celery_task = batch_build_documents.delay(
+            document_ids=[doc.id for doc in documents],
+            graph_id=target_graph.id,
+            batch_task_id=batch_task.id,
+        )
+
+        # 更新Celery任务ID和开始时间
+        batch_task.celery_task_id = celery_task.id
+        batch_task.status = TaskStatus.PROCESSING
+        batch_task.started_at = datetime.utcnow()
+        batch_task.current_step = "批量任务已提交"
+        batch_task.message = f"开始批量处理 {len(documents)} 个文档..."
+        db.commit()
+
+        logger.info(f"Batch task started: task_id={batch_task.id}, documents={len(documents)}")
+
+        return {
+            "message": "批量任务已开始",
+            "task_id": batch_task.id,
+            "celery_task_id": celery_task.id,
+            "document_count": len(documents)
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to submit batch Celery task: {e}")
+        batch_task.status = TaskStatus.FAILED
+        batch_task.error_message = f"任务提交失败: {str(e)}"
+        db.commit()
+        raise HTTPException(status_code=500, detail=f"任务提交失败: {str(e)}")

@@ -302,3 +302,185 @@ def delete_document_from_kg(document_id: str):
     # TODO: 实现基于文档的实体/关系删除
     logger.info(f"Delete document {document_id} from KG (not implemented yet)")
     return {"status": "not_implemented"}
+
+
+def process_single_document(document_id: str, task_id: str):
+    """处理单个文档的辅助函数，用于批量构建
+
+    Args:
+        document_id: 文档ID
+        task_id: 任务ID
+
+    Returns:
+        处理结果字典
+    """
+    db = SessionLocal()
+    try:
+        document = db.query(DBDocument).filter(DBDocument.id == document_id).first()
+        if not document:
+            return {"document_id": document_id, "status": "error", "error": "文档不存在"}
+
+        file_path = document.file_path
+        graph_id = document.graph_id
+
+        # 更新任务状态
+        update_task_progress(task_id, 0.0, "初始化", "准备处理文档...", TaskStatus.PROCESSING)
+
+        # 从Neo4j加载该图谱的已有数据
+        kg = load_knowledge_from_neo4j(graph_id)
+        original_entity_count = len(kg.entities)
+        original_relation_count = len(kg.relations)
+
+        disk = DISK(llm=llm, embeddings=embeddings, kg=kg)
+
+        # 构建知识图谱
+        update_task_progress(task_id, 0.1, "构建知识图谱", "正在提取文本并构建知识图谱...")
+
+        final_kg = disk.build_knowledge_graph(
+            pdf_path=file_path,
+            mode="parallel"
+        )
+
+        # 获取 Token 使用统计
+        token_summary = disk.get_token_summary()
+        input_tokens = 0
+        output_tokens = 0
+        if token_summary:
+            input_tokens = token_summary.get('total_input_tokens', 0)
+            output_tokens = token_summary.get('total_output_tokens', 0)
+
+        # 计算新增的实体和关系
+        new_entities = final_kg.entities[original_entity_count:]
+        new_relations = final_kg.relations[original_relation_count:]
+
+        # 持久化到Neo4j（只保存新增的实体和关系）
+        update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...", input_tokens=input_tokens, output_tokens=output_tokens)
+
+        from backend.core.config import settings
+
+        connector = Neo4jConnector(
+            uri=settings.NEO4J_URI,
+            user=settings.NEO4J_USER,
+            password=settings.NEO4J_PASSWORD,
+            graph_id=graph_id
+        )
+        connector.create_entities(new_entities)
+        connector.create_relations(new_relations)
+        connector.close()
+
+        # 更新为完成状态
+        update_task_progress(
+            task_id,
+            1.0,
+            "完成",
+            f"知识图谱构建完成！实体数: {len(final_kg.entities)}, 关系数: {len(final_kg.relations)}",
+            TaskStatus.COMPLETED,
+            entities_count=len(final_kg.entities),
+            relations_count=len(final_kg.relations),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens
+        )
+
+        # 更新文档状态
+        document = db.query(DBDocument).filter(DBDocument.id == document_id).first()
+        if document:
+            document.status = TaskStatus.COMPLETED
+            db.commit()
+
+        return {
+            "document_id": document_id,
+            "status": "completed",
+            "entities_count": len(final_kg.entities),
+            "relations_count": len(final_kg.relations),
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to process document {document_id}: {e}", exc_info=True)
+        update_task_progress(task_id, 0, "失败", f"处理失败: {str(e)}", TaskStatus.FAILED)
+        return {"document_id": document_id, "status": "error", "error": str(e)}
+
+    finally:
+        db.close()
+
+
+@celery_app.task(name="backend.tasks.document_tasks.batch_build_documents")
+def batch_build_documents(document_ids: list[str], graph_id: str, batch_task_id: str):
+    """批量构建文档知识图谱
+
+    并行处理所有文档，每个文档独立构建到同一个知识图谱。
+
+    Args:
+        document_ids: 文档ID列表
+        graph_id: 目标知识图谱ID
+        batch_task_id: 批量任务ID
+    """
+    from datetime import datetime
+
+    db = SessionLocal()
+    try:
+        # 更新批量任务状态
+        update_task_progress(batch_task_id, 0.1, "初始化", f"准备批量处理 {len(document_ids)} 个文档...", TaskStatus.PROCESSING)
+
+        # 获取所有文档的文件路径
+        documents = db.query(DBDocument).filter(DBDocument.id.in_(document_ids)).all()
+        doc_map = {doc.id: doc for doc in documents}
+
+        # 为每个文档创建任务并启动
+        task_ids = []
+        for i, doc_id in enumerate(document_ids):
+            doc = doc_map.get(doc_id)
+            if not doc:
+                logger.warning(f"Document not found: {doc_id}")
+                continue
+
+            # 为每个文档创建任务记录
+            task = DBTask(
+                document_id=doc_id,
+                status=TaskStatus.PENDING,
+                current_step="等待批量处理",
+                message="排队中...",
+            )
+            db.add(task)
+            db.commit()
+            db.refresh(task)
+            task_ids.append(task.id)
+
+            # 异步启动单个文档处理任务（传入文件路径）
+            process_document.delay(doc_id, doc.file_path, task.id)
+
+            # 更新批量任务进度
+            progress = 0.1 + (i + 1) / len(document_ids) * 0.8
+            update_task_progress(
+                batch_task_id,
+                progress,
+                "并行处理",
+                f"已提交 {i + 1}/{len(document_ids)} 个文档任务...",
+            )
+
+        # 注意：由于任务是异步并行执行的，我们这里直接标记批量任务为完成
+        # 实际进度可以通过各个文档任务的进度来跟踪
+        update_task_progress(
+            batch_task_id,
+            1.0,
+            "已提交",
+            f"批量任务已提交，共 {len(document_ids)} 个文档正在并行处理",
+            TaskStatus.COMPLETED,
+        )
+
+        logger.info(f"Batch build submitted: {len(document_ids)} documents, tasks: {task_ids}")
+
+        return {
+            "status": "submitted",
+            "document_count": len(document_ids),
+            "task_ids": task_ids
+        }
+
+    except Exception as e:
+        logger.error(f"Batch build failed: {e}", exc_info=True)
+        update_task_progress(batch_task_id, 0, "失败", f"批量处理失败: {str(e)}", TaskStatus.FAILED)
+        raise
+
+    finally:
+        db.close()
