@@ -59,7 +59,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    document_id = Column(String, ForeignKey("documents.id"), nullable=False)
+    document_id = Column(String, ForeignKey("documents.id"), nullable=True)  # 可为空，用于批量任务
     celery_task_id = Column(String, unique=True, nullable=True)  # Celery任务ID
 
     status = Column(String, nullable=False, default=TaskStatus.PENDING)
