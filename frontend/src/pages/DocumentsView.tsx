@@ -97,8 +97,9 @@ export default function DocumentsView() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<string>('all')
   const [currentTime, setCurrentTime] = useState(Date.now())  // 用于实时更新构建耗时
-  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set())  // 批量选中的文档ID
   const [isBatchBuilding, setIsBatchBuilding] = useState(false)  // 批量构建中
+  const [isBatchSelectMode, setIsBatchSelectMode] = useState(false)  // 批量选择模式
+  const [selectedDocIds, setSelectedDocIds] = useState<Set<string>>(new Set())  // 批量选中的文档ID
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 存储任务取消订阅的函数
@@ -481,21 +482,27 @@ export default function DocumentsView() {
     }
   }
 
-  // 批量选择相关函数
-  const toggleSelectDocument = (docId: string) => {
-    setSelectedDocIds((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(docId)) {
-        newSet.delete(docId)
-      } else {
-        newSet.add(docId)
-      }
-      return newSet
-    })
+  // 批量构建函数
+  const handleBatchBuild = () => {
+    const pendingDocs = documents.filter((d) => d.status === 'pending' || d.status === 'error')
+    if (pendingDocs.length === 0) {
+      alert('没有可构建的文档')
+      return
+    }
+    // 打开批量选择弹窗，默认选中所有待处理文档
+    setIsBatchSelectMode(true)
+    setSelectedDocIds(new Set(pendingDocs.map((d) => d.id)))
   }
 
-  const toggleSelectAll = () => {
-    const pendingDocs = filteredDocuments.filter((d) => d.status === 'pending' || d.status === 'error')
+  // 关闭批量选择弹窗
+  const handleCloseBatchSelect = () => {
+    setIsBatchSelectMode(false)
+    setSelectedDocIds(new Set())
+  }
+
+  // 全选/取消全选
+  const handleToggleSelectAll = () => {
+    const pendingDocs = documents.filter((d) => d.status === 'pending' || d.status === 'error')
     if (selectedDocIds.size === pendingDocs.length) {
       setSelectedDocIds(new Set())
     } else {
@@ -503,28 +510,16 @@ export default function DocumentsView() {
     }
   }
 
-  const clearSelection = () => {
-    setSelectedDocIds(new Set())
-  }
-
-  // 批量构建函数
-  const handleBatchBuild = async () => {
+  // 执行批量构建
+  const handleExecuteBatchBuild = async () => {
     if (selectedDocIds.size === 0) {
       alert('请至少选择一个文档')
       return
     }
 
-    const pendingDocs = filteredDocuments.filter((d) => selectedDocIds.has(d.id) && (d.status === 'pending' || d.status === 'error'))
-    if (pendingDocs.length === 0) {
-      alert('只能构建待处理或处理失败的文档')
-      return
-    }
-
-    if (!confirm(`确定要批量构建 ${pendingDocs.length} 个文档吗？`)) {
-      return
-    }
-
     setIsBatchBuilding(true)
+    setIsBatchSelectMode(false)
+
     try {
       const result = await documentsApi.batchBuild(
         Array.from(selectedDocIds),
@@ -540,19 +535,31 @@ export default function DocumentsView() {
         )
       )
 
-      // 订阅批量任务进度
-      if (result.task_id) {
-        subscribeToTaskProgress(result.task_id, 'batch')
-      }
+      setSelectedDocIds(new Set())
 
-      clearSelection()
-      alert(`批量构建已开始，共 ${pendingDocs.length} 个文档`)
+      // 刷新文档列表
+      await fetchDocuments()
+
+      alert(`批量构建已开始，共 ${selectedDocIds.size} 个文档`)
     } catch (error) {
       console.error('Batch build failed:', error)
       alert('批量构建失败: ' + (error instanceof Error ? error.message : '未知错误'))
     } finally {
       setIsBatchBuilding(false)
     }
+  }
+
+  // 切换单个文档选择
+  const handleToggleSelectDocument = (docId: string) => {
+    setSelectedDocIds((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(docId)) {
+        newSet.delete(docId)
+      } else {
+        newSet.add(docId)
+      }
+      return newSet
+    })
   }
 
   const stats = [
@@ -583,20 +590,6 @@ export default function DocumentsView() {
             accept=".pdf,.docx,.txt,.md"
             onChange={handleFileSelect}
           />
-          {/* 批量构建按钮 */}
-          {selectedDocIds.size > 0 && (
-            <motion.button
-              onClick={handleBatchBuild}
-              disabled={isBatchBuilding}
-              className="text-sm text-[#00b4d8] bg-[#00b4d8]/10 hover:bg-[#00b4d8]/20 rounded-lg transition-colors flex items-center gap-1.5"
-              style={{ padding: '6px 12px' }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Zap className={`w-4 h-4 ${isBatchBuilding ? 'animate-pulse' : ''}`} />
-              批量构建 ({selectedDocIds.size})
-            </motion.button>
-          )}
           <button
             onClick={refreshAll}
             disabled={isLoading}
@@ -700,43 +693,6 @@ export default function DocumentsView() {
         </div>
       </NeoCard>
 
-      {/* Batch Selection Bar */}
-      {selectedDocIds.size > 0 && (
-        <NeoCard className="px-4 py-3 flex items-center justify-between" style={{ padding: '12px 16px' }}>
-          <div className="flex items-center gap-3">
-            <motion.button
-              onClick={toggleSelectAll}
-              className="w-8 h-8 rounded-lg bg-[#00b4d8]/10 flex items-center justify-center text-[#00b4d8] hover:bg-[#00b4d8]/20 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {selectedDocIds.size === filteredDocuments.filter((d) => d.status === 'pending' || d.status === 'error').length ? (
-                <CheckSquare className="w-4 h-4" />
-              ) : (
-                <Square className="w-4 h-4" />
-              )}
-            </motion.button>
-            <span className="text-sm text-[#f0f4f8]">已选择 {selectedDocIds.size} 个文档</span>
-            <button
-              onClick={clearSelection}
-              className="text-sm text-[#64748b] hover:text-[#f0f4f8] transition-colors"
-            >
-              取消选择
-            </button>
-          </div>
-          <motion.button
-            onClick={handleBatchBuild}
-            disabled={isBatchBuilding}
-            className="px-4 py-2 text-sm bg-[#00c853]/20 hover:bg-[#00c853]/30 text-[#00c853] rounded-lg transition-colors flex items-center gap-2"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Zap className={`w-4 h-4 ${isBatchBuilding ? 'animate-pulse' : ''}`} />
-            {isBatchBuilding ? '批量构建中...' : '开始批量构建'}
-          </motion.button>
-        </NeoCard>
-      )}
-
       {/* Stats & Filter Tabs */}
       <div className="flex items-center gap-2 neo-card" style={{ padding: '12px' }}>
         {stats.map((stat) => (
@@ -764,6 +720,22 @@ export default function DocumentsView() {
             </span>
           </button>
         ))}
+        {/* 批量构建按钮 */}
+        {stats.find(s => s.key === 'pending')?.value && stats.find(s => s.key === 'pending')!.value > 0 && (
+          <motion.button
+            onClick={handleBatchBuild}
+            disabled={isBatchBuilding}
+            className="rounded-lg flex items-center justify-center gap-2 bg-[#00c853]/10 hover:bg-[#00c853]/20 text-[#00c853] transition-colors"
+            style={{ minWidth: '120px', minHeight: '36px', padding: '12px 20px' }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Zap className={`w-4 h-4 ${isBatchBuilding ? 'animate-pulse' : ''}`} />
+            <span className="text-sm font-medium">
+              {isBatchBuilding ? '批量构建中...' : '批量构建'}
+            </span>
+          </motion.button>
+        )}
       </div>
 
       {/* Document List */}
@@ -785,26 +757,6 @@ export default function DocumentsView() {
                   className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 group"
                   style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0', minHeight: '60px', paddingLeft: '8px' }}
                 >
-                    {/* Checkbox - only show for pending/error documents */}
-                    {(doc.status === 'pending' || doc.status === 'error') && (
-                      <motion.button
-                        onClick={() => toggleSelectDocument(doc.id)}
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors shrink-0 ${
-                          selectedDocIds.has(doc.id)
-                            ? 'bg-[#00b4d8]/20 text-[#00b4d8]'
-                            : 'bg-[#1a2332] text-[#64748b] hover:text-[#f0f4f8]'
-                        }`}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        {selectedDocIds.has(doc.id) ? (
-                          <CheckSquare className="w-4 h-4" />
-                        ) : (
-                          <Square className="w-4 h-4" />
-                        )}
-                      </motion.button>
-                    )}
-
                     {/* File Icon */}
                     <div className={`w-12 h-12 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`}>
                       {fileConfig.icon}
@@ -955,6 +907,130 @@ export default function DocumentsView() {
           </div>
         )}
       </NeoCard>
+
+      {/* Batch Select Modal */}
+      <AnimatePresence>
+        {isBatchSelectMode && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleCloseBatchSelect}
+          >
+            <motion.div
+              className="neo-card-elevated w-full max-w-2xl max-h-[70vh] flex flex-col"
+              style={{ padding: '20px' }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6" style={{ paddingLeft: '4px', paddingRight: '4px' }}>
+                <div>
+                  <h2 className="text-lg font-semibold text-[#f0f4f8]">批量构建文档</h2>
+                  <p className="text-sm text-[#64748b] mt-1">选择要构建的文档</p>
+                </div>
+                <motion.button
+                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                  style={{ padding: '4px' }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleCloseBatchSelect}
+                >
+                  <X className="w-4 h-4" />
+                </motion.button>
+              </div>
+
+              {/* Selection Actions */}
+              <div className="flex items-center justify-between rounded-lg bg-[#0a0e17] border border-[#2a3548]" style={{ padding: '10px 14px', marginBottom: '16px' }}>
+                <div className="flex items-center gap-3">
+                  <motion.button
+                    onClick={handleToggleSelectAll}
+                    className="text-sm text-[#00b4d8] hover:text-[#00c853] flex items-center gap-2 transition-colors"
+                    style={{ padding: '4px 8px' }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {selectedDocIds.size === documents.filter((d) => d.status === 'pending' || d.status === 'error').length ? (
+                      <>
+                        <CheckSquare className="w-4 h-4" />
+                        取消全选
+                      </>
+                    ) : (
+                      <>
+                        <Square className="w-4 h-4" />
+                        全选
+                      </>
+                    )}
+                  </motion.button>
+                  <span className="text-sm text-[#64748b]">
+                    已选择 <span className="text-[#00b4d8] font-medium">{selectedDocIds.size}</span> 个文档
+                  </span>
+                </div>
+              </div>
+
+              {/* Document List */}
+              <div className="flex-1 overflow-y-auto" style={{ maxHeight: '400px', paddingLeft: '4px', paddingRight: '4px', marginBottom: '20px' }}>
+                {documents.filter((d) => d.status === 'pending' || d.status === 'error').map((doc, index) => {
+                  const fileConfig = fileTypeConfig[doc.fileType] || fileTypeConfig.pdf
+                  const isSelected = selectedDocIds.has(doc.id)
+                  return (
+                    <motion.button
+                      key={doc.id}
+                      onClick={() => handleToggleSelectDocument(doc.id)}
+                      className={`w-full flex items-center gap-4 rounded-lg border transition-all text-left ${
+                        isSelected
+                          ? 'bg-[#00b4d8]/10 border-[#00b4d8]/30'
+                          : 'bg-[#0a0e17] border-[#2a3548] hover:border-[#3b4a61]'
+                      }`}
+                      style={{ padding: '12px 16px', marginBottom: index < documents.filter((d) => d.status === 'pending' || d.status === 'error').length - 1 ? '8px' : '0' }}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className={`w-10 h-10 rounded-lg ${fileConfig.bg} flex items-center justify-center text-xl shrink-0`} style={{ marginLeft: '2px' }}>
+                        {fileConfig.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
+                        <p className="text-xs text-[#64748b]">{doc.size}</p>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle2 className="w-5 h-5 text-[#00b4d8] shrink-0" style={{ marginRight: '2px' }} />
+                      )}
+                    </motion.button>
+                  )
+                })}
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex items-center justify-end gap-3" style={{ paddingLeft: '4px', paddingRight: '4px' }}>
+                <motion.button
+                  onClick={handleCloseBatchSelect}
+                  className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors"
+                  style={{ padding: '10px 18px' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  取消
+                </motion.button>
+                <motion.button
+                  onClick={handleExecuteBatchBuild}
+                  disabled={selectedDocIds.size === 0 || isBatchBuilding}
+                  className="text-sm bg-[#00c853] hover:bg-[#00c853]/80 text-white rounded-lg transition-colors flex items-center gap-2"
+                  style={{ padding: '10px 18px' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Zap className={`w-4 h-4 ${isBatchBuilding ? 'animate-pulse' : ''}`} />
+                  {isBatchBuilding ? '构建中...' : `开始构建 (${selectedDocIds.size})`}
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Detail Modal */}
       <AnimatePresence>

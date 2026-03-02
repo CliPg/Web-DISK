@@ -193,8 +193,12 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         # 初始化DISK实例（每个任务独立实例）
         # 从Neo4j加载该图谱的已有数据，实现增量构建
         kg = load_knowledge_from_neo4j(graph_id)
-        original_entity_count = len(kg.entities)
-        original_relation_count = len(kg.relations)
+
+        # 获取原始实体列表的ID，用于后续比较
+        original_entity_ids = {id(e) for e in kg.entities}
+        original_relation_ids = {id(r) for r in kg.relations}
+
+        logger.info(f"[DEBUG] graph_id={graph_id}, original_entities={len(kg.entities)}, original_relations={len(kg.relations)}")
 
         disk = DISK(llm=llm, embeddings=embeddings, kg=kg)
 
@@ -218,8 +222,9 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
             logger.info(f"Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {input_tokens + output_tokens}")
 
         # 计算新增的实体和关系（用于持久化）
-        new_entities = final_kg.entities[original_entity_count:]
-        new_relations = final_kg.relations[original_relation_count:]
+        # 通过对象ID来判断哪些是新增的，而不是通过切片
+        new_entities = [e for e in final_kg.entities if id(e) not in original_entity_ids]
+        new_relations = [r for r in final_kg.relations if id(r) not in original_relation_ids]
 
         logger.info(f"New entities: {len(new_entities)}, new relations: {len(new_relations)}")
 
@@ -328,8 +333,10 @@ def process_single_document(document_id: str, task_id: str):
 
         # 从Neo4j加载该图谱的已有数据
         kg = load_knowledge_from_neo4j(graph_id)
-        original_entity_count = len(kg.entities)
-        original_relation_count = len(kg.relations)
+
+        # 获取原始实体列表的ID，用于后续比较
+        original_entity_ids = {id(e) for e in kg.entities}
+        original_relation_ids = {id(r) for r in kg.relations}
 
         disk = DISK(llm=llm, embeddings=embeddings, kg=kg)
 
@@ -349,9 +356,9 @@ def process_single_document(document_id: str, task_id: str):
             input_tokens = token_summary.get('total_input_tokens', 0)
             output_tokens = token_summary.get('total_output_tokens', 0)
 
-        # 计算新增的实体和关系
-        new_entities = final_kg.entities[original_entity_count:]
-        new_relations = final_kg.relations[original_relation_count:]
+        # 计算新增的实体和关系（通过对象ID判断）
+        new_entities = [e for e in final_kg.entities if id(e) not in original_entity_ids]
+        new_relations = [r for r in final_kg.relations if id(r) not in original_relation_ids]
 
         # 持久化到Neo4j（只保存新增的实体和关系）
         update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...", input_tokens=input_tokens, output_tokens=output_tokens)
