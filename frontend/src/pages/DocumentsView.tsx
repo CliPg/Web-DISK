@@ -489,9 +489,9 @@ export default function DocumentsView() {
       alert('没有可构建的文档')
       return
     }
-    // 打开批量选择弹窗，默认选中所有待处理文档
+    // 打开批量选择弹窗，不默认选中任何文档
     setIsBatchSelectMode(true)
-    setSelectedDocIds(new Set(pendingDocs.map((d) => d.id)))
+    setSelectedDocIds(new Set())
   }
 
   // 关闭批量选择弹窗
