@@ -1,39 +1,48 @@
-import sys
-import os
-from pathlib import Path
+import logging
 from typing import Optional
+
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
-import logging
 
 # 添加DISK模块路径
-disk_path = Path(__file__).resolve().parent.parent.parent / "DISK"
-sys.path.insert(0, str(disk_path))
-
-from backend.tasks.celery_app import celery_app
-from backend.db.neo4j import Neo4jRepository
-from backend.db.session import SessionLocal
-from backend.models.database import Document as DBDocument, Task as DBTask, KnowledgeGraph as DBKnowledgeGraph
-from backend.models.schemas import TaskStatus
+from config.llm import embeddings, llm
 
 # 导入DISK模块
 from disk import DISK
-from config.llm import llm, embeddings
 from models.knowledge_graph import KnowledgeGraph
 from models.neo4j_connector import Neo4jConnector
+
+from backend.db.neo4j import Neo4jRepository
+from backend.db.session import SessionLocal
+from backend.models.database import Document as DBDocument
+from backend.models.database import KnowledgeGraph as DBKnowledgeGraph
+from backend.models.database import Task as DBTask
+from backend.models.schemas import TaskStatus
+from backend.tasks.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
 
 class CallbackTask(Task):
     """支持回调的Celery任务基类"""
+
     _callback = None
 
     def __init__(self):
         self.neo4j_repo = Neo4jRepository()
 
 
-def update_task_progress(task_id: str, progress: float, current_step: str, message: str, status: Optional[TaskStatus] = None, entities_count: int = 0, relations_count: int = 0, input_tokens: int = 0, output_tokens: int = 0):
+def update_task_progress(
+    task_id: str,
+    progress: float,
+    current_step: str,
+    message: str,
+    status: Optional[TaskStatus] = None,
+    entities_count: int = 0,
+    relations_count: int = 0,
+    input_tokens: int = 0,
+    output_tokens: int = 0,
+):
     """更新任务进度到数据库"""
     from datetime import datetime
 
@@ -70,9 +79,10 @@ def load_knowledge_from_neo4j(graph_id: str = None) -> KnowledgeGraph:
     Returns:
         KnowledgeGraph: 包含已有实体和关系的知识图谱
     """
-    from neo4j import GraphDatabase
-    from backend.core.config import settings
     from models.knowledge_graph import Entity, Relation
+    from neo4j import GraphDatabase
+
+    from backend.core.config import settings
 
     # 如果没有graph_id，返回空KG
     if not graph_id:
@@ -82,8 +92,7 @@ def load_knowledge_from_neo4j(graph_id: str = None) -> KnowledgeGraph:
 
     try:
         driver = GraphDatabase.driver(
-            settings.NEO4J_URI,
-            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+            settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
         )
 
         with driver.session() as session:
@@ -97,7 +106,7 @@ def load_knowledge_from_neo4j(graph_id: str = None) -> KnowledgeGraph:
                 entity = Entity(
                     label=record["label"] or "Entity",
                     name=record["name"],
-                    embedding=record["embedding"]
+                    embedding=record["embedding"],
                 )
                 kg.entities.append(entity)
 
@@ -122,12 +131,14 @@ def load_knowledge_from_neo4j(graph_id: str = None) -> KnowledgeGraph:
                         end_entity=end_entity,
                         label=record["label"] or "RELATION",
                         name=record["name"],
-                        embedding=record["embedding"]
+                        embedding=record["embedding"],
                     )
                     kg.relations.append(relation)
 
         driver.close()
-        logger.info(f"Loaded knowledge graph {graph_id}: {len(kg.entities)} entities, {len(kg.relations)} relations")
+        logger.info(
+            f"Loaded knowledge graph {graph_id}: {len(kg.entities)} entities, {len(kg.relations)} relations"
+        )
 
     except Exception as e:
         logger.error(f"Failed to load knowledge graph from Neo4j: {e}")
@@ -144,8 +155,8 @@ def update_graph_stats(graph_id: str, db: SessionLocal):
         neo4j_repo = Neo4jRepository()
         stats = neo4j_repo.get_stats(graph_id=graph_id)
 
-        entity_count = stats.get('total_entities', 0)
-        relation_count = stats.get('total_relations', 0)
+        entity_count = stats.get("total_entities", 0)
+        relation_count = stats.get("total_relations", 0)
 
         # 获取该图谱下的文档数量
         doc_count = db.query(DBDocument).filter(DBDocument.graph_id == graph_id).count()
@@ -157,7 +168,9 @@ def update_graph_stats(graph_id: str, db: SessionLocal):
             graph.relation_count = int(relation_count)
             graph.document_count = doc_count
             db.commit()
-            logger.info(f"Updated graph {graph_id} stats: {entity_count} entities, {relation_count} relations, {doc_count} documents")
+            logger.info(
+                f"Updated graph {graph_id} stats: {entity_count} entities, {relation_count} relations, {doc_count} documents"
+            )
 
     except Exception as e:
         logger.error(f"Failed to update graph stats: {e}")
@@ -188,7 +201,13 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
                 logger.info(f"Processing document for graph: {graph.name}")
 
         # 更新任务状态为处理中
-        update_task_progress(task_id, 0.0, "初始化", f"准备处理文档{' (图谱: ' + graph.name + ')' if graph else ''}...", TaskStatus.PROCESSING)
+        update_task_progress(
+            task_id,
+            0.0,
+            "初始化",
+            f"准备处理文档{' (图谱: ' + graph.name + ')' if graph else ''}...",
+            TaskStatus.PROCESSING,
+        )
 
         # 初始化DISK实例（每个任务独立实例）
         # 从Neo4j加载该图谱的已有数据，实现增量构建
@@ -198,7 +217,9 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         original_entity_ids = {id(e) for e in kg.entities}
         original_relation_ids = {id(r) for r in kg.relations}
 
-        logger.info(f"[DEBUG] graph_id={graph_id}, original_entities={len(kg.entities)}, original_relations={len(kg.relations)}")
+        logger.info(
+            f"[DEBUG] graph_id={graph_id}, original_entities={len(kg.entities)}, original_relations={len(kg.relations)}"
+        )
 
         disk = DISK(llm=llm, embeddings=embeddings, kg=kg)
 
@@ -207,19 +228,23 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
 
         final_kg = disk.build_knowledge_graph(
             pdf_path=file_path,
-            mode="parallel"  # 使用并行模式，提升处理速度
+            mode="parallel",  # 使用并行模式，提升处理速度
         )
 
-        logger.info(f"Knowledge graph built: {len(final_kg.entities)} entities, {len(final_kg.relations)} relations")
+        logger.info(
+            f"Knowledge graph built: {len(final_kg.entities)} entities, {len(final_kg.relations)} relations"
+        )
 
         # 获取 Token 使用统计
         token_summary = disk.get_token_summary()
         input_tokens = 0
         output_tokens = 0
         if token_summary:
-            input_tokens = token_summary.get('total_input_tokens', 0)
-            output_tokens = token_summary.get('total_output_tokens', 0)
-            logger.info(f"Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {input_tokens + output_tokens}")
+            input_tokens = token_summary.get("total_input_tokens", 0)
+            output_tokens = token_summary.get("total_output_tokens", 0)
+            logger.info(
+                f"Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {input_tokens + output_tokens}"
+            )
 
         # 计算新增的实体和关系（用于持久化）
         # 通过对象ID来判断哪些是新增的，而不是通过切片
@@ -229,7 +254,14 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         logger.info(f"New entities: {len(new_entities)}, new relations: {len(new_relations)}")
 
         # 持久化到Neo4j（只保存新增的实体和关系）
-        update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...", input_tokens=input_tokens, output_tokens=output_tokens)
+        update_task_progress(
+            task_id,
+            0.9,
+            "保存图谱",
+            "正在写入Neo4j数据库...",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
 
         from backend.core.config import settings
 
@@ -238,7 +270,7 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
             uri=settings.NEO4J_URI,
             user=settings.NEO4J_USER,
             password=settings.NEO4J_PASSWORD,
-            graph_id=graph_id
+            graph_id=graph_id,
         )
         connector.create_entities(new_entities)
         connector.create_relations(new_relations)
@@ -254,7 +286,7 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
             entities_count=len(final_kg.entities),
             relations_count=len(final_kg.relations),
             input_tokens=input_tokens,
-            output_tokens=output_tokens
+            output_tokens=output_tokens,
         )
 
         # 更新文档状态
@@ -270,7 +302,7 @@ def process_document(self, document_id: str, file_path: str, task_id: str):
         return {
             "status": "completed",
             "entities_count": len(final_kg.entities),
-            "relations_count": len(final_kg.relations)
+            "relations_count": len(final_kg.relations),
         }
 
     except SoftTimeLimitExceeded:
@@ -343,25 +375,29 @@ def process_single_document(document_id: str, task_id: str):
         # 构建知识图谱
         update_task_progress(task_id, 0.1, "构建知识图谱", "正在提取文本并构建知识图谱...")
 
-        final_kg = disk.build_knowledge_graph(
-            pdf_path=file_path,
-            mode="parallel"
-        )
+        final_kg = disk.build_knowledge_graph(pdf_path=file_path, mode="parallel")
 
         # 获取 Token 使用统计
         token_summary = disk.get_token_summary()
         input_tokens = 0
         output_tokens = 0
         if token_summary:
-            input_tokens = token_summary.get('total_input_tokens', 0)
-            output_tokens = token_summary.get('total_output_tokens', 0)
+            input_tokens = token_summary.get("total_input_tokens", 0)
+            output_tokens = token_summary.get("total_output_tokens", 0)
 
         # 计算新增的实体和关系（通过对象ID判断）
         new_entities = [e for e in final_kg.entities if id(e) not in original_entity_ids]
         new_relations = [r for r in final_kg.relations if id(r) not in original_relation_ids]
 
         # 持久化到Neo4j（只保存新增的实体和关系）
-        update_task_progress(task_id, 0.9, "保存图谱", "正在写入Neo4j数据库...", input_tokens=input_tokens, output_tokens=output_tokens)
+        update_task_progress(
+            task_id,
+            0.9,
+            "保存图谱",
+            "正在写入Neo4j数据库...",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
 
         from backend.core.config import settings
 
@@ -369,7 +405,7 @@ def process_single_document(document_id: str, task_id: str):
             uri=settings.NEO4J_URI,
             user=settings.NEO4J_USER,
             password=settings.NEO4J_PASSWORD,
-            graph_id=graph_id
+            graph_id=graph_id,
         )
         connector.create_entities(new_entities)
         connector.create_relations(new_relations)
@@ -385,7 +421,7 @@ def process_single_document(document_id: str, task_id: str):
             entities_count=len(final_kg.entities),
             relations_count=len(final_kg.relations),
             input_tokens=input_tokens,
-            output_tokens=output_tokens
+            output_tokens=output_tokens,
         )
 
         # 更新文档状态
@@ -428,7 +464,13 @@ def batch_build_documents(document_ids: list[str], graph_id: str, batch_task_id:
     db = SessionLocal()
     try:
         # 更新批量任务状态
-        update_task_progress(batch_task_id, 0.1, "初始化", f"准备批量处理 {len(document_ids)} 个文档...", TaskStatus.PROCESSING)
+        update_task_progress(
+            batch_task_id,
+            0.1,
+            "初始化",
+            f"准备批量处理 {len(document_ids)} 个文档...",
+            TaskStatus.PROCESSING,
+        )
 
         # 获取所有文档的文件路径
         documents = db.query(DBDocument).filter(DBDocument.id.in_(document_ids)).all()
@@ -478,11 +520,7 @@ def batch_build_documents(document_ids: list[str], graph_id: str, batch_task_id:
 
         logger.info(f"Batch build submitted: {len(document_ids)} documents, tasks: {task_ids}")
 
-        return {
-            "status": "submitted",
-            "document_count": len(document_ids),
-            "task_ids": task_ids
-        }
+        return {"status": "submitted", "document_count": len(document_ids), "task_ids": task_ids}
 
     except Exception as e:
         logger.error(f"Batch build failed: {e}", exc_info=True)

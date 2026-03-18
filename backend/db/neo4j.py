@@ -1,8 +1,10 @@
-from typing import Optional
-from neo4j import GraphDatabase
-from backend.core.config import settings
 import logging
+from typing import Optional
+
 import numpy as np
+from neo4j import GraphDatabase
+
+from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +19,7 @@ class Neo4jRepository:
         """连接到Neo4j"""
         if not self.driver:
             self.driver = GraphDatabase.driver(
-                settings.NEO4J_URI,
-                auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+                settings.NEO4J_URI, auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
             )
         return self.driver
 
@@ -80,10 +81,16 @@ class Neo4jRepository:
             "total_entities": total_entities,
             "total_relations": total_relations,
             "entity_types": entity_types,
-            "relation_types": relation_types
+            "relation_types": relation_types,
         }
 
-    def get_entities(self, graph_id: str, limit: int = 100, offset: int = 0, order_by_relation_count: bool = False) -> list[dict]:
+    def get_entities(
+        self,
+        graph_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        order_by_relation_count: bool = False,
+    ) -> list[dict]:
         """获取指定知识图谱的实体列表
 
         Args:
@@ -97,7 +104,8 @@ class Neo4jRepository:
         with driver.session() as session:
             if order_by_relation_count:
                 # 按关系数量排序：统计每个实体的关系数量（作为起点或终点）
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (n {graph_id: $graph_id})
                     OPTIONAL MATCH (n)-[r]-()
                     WITH n, count(r) as relation_count
@@ -105,36 +113,49 @@ class Neo4jRepository:
                     SKIP $offset
                     LIMIT $limit
                     RETURN n, relation_count
-                """, graph_id=graph_id, offset=offset, limit=limit)
+                """,
+                    graph_id=graph_id,
+                    offset=offset,
+                    limit=limit,
+                )
 
                 entities = []
                 for record in result:
                     node = record["n"]
-                    entities.append({
-                        "id": element_id(node),
-                        "labels": list(node.labels),
-                        "properties": dict(node),
-                        "relation_count": record["relation_count"]
-                    })
+                    entities.append(
+                        {
+                            "id": element_id(node),
+                            "labels": list(node.labels),
+                            "properties": dict(node),
+                            "relation_count": record["relation_count"],
+                        }
+                    )
                 return entities
             else:
                 # 默认按 elementId 排序
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (n {graph_id: $graph_id})
                     RETURN n
                     ORDER BY elementId(n)
                     SKIP $offset
                     LIMIT $limit
-                """, graph_id=graph_id, offset=offset, limit=limit)
+                """,
+                    graph_id=graph_id,
+                    offset=offset,
+                    limit=limit,
+                )
 
                 entities = []
                 for record in result:
                     node = record["n"]
-                    entities.append({
-                        "id": element_id(node),
-                        "labels": list(node.labels),
-                        "properties": dict(node)
-                    })
+                    entities.append(
+                        {
+                            "id": element_id(node),
+                            "labels": list(node.labels),
+                            "properties": dict(node),
+                        }
+                    )
                 return entities
 
     def get_relations(self, graph_id: str, limit: int = 100, offset: int = 0) -> list[dict]:
@@ -142,7 +163,8 @@ class Neo4jRepository:
         driver = self.connect()
 
         with driver.session() as session:
-            result = session.run("""
+            result = session.run(
+                """
                 MATCH (a {graph_id: $graph_id})-[r]->(b {graph_id: $graph_id})
                 RETURN elementId(a) as start_id, labels(a) as start_labels,
                        elementId(b) as end_id, labels(b) as end_labels,
@@ -150,18 +172,24 @@ class Neo4jRepository:
                 ORDER BY elementId(r)
                 SKIP $offset
                 LIMIT $limit
-            """, graph_id=graph_id, offset=offset, limit=limit)
+            """,
+                graph_id=graph_id,
+                offset=offset,
+                limit=limit,
+            )
 
             relations = []
             for record in result:
-                relations.append({
-                    "start_id": record["start_id"],
-                    "start_labels": record["start_labels"],
-                    "end_id": record["end_id"],
-                    "end_labels": record["end_labels"],
-                    "type": record["rel_type"],
-                    "properties": record["props"]
-                })
+                relations.append(
+                    {
+                        "start_id": record["start_id"],
+                        "start_labels": record["start_labels"],
+                        "end_id": record["end_id"],
+                        "end_labels": record["end_labels"],
+                        "type": record["rel_type"],
+                        "properties": record["props"],
+                    }
+                )
             return relations
 
     def clear_graph(self, graph_id: str):
@@ -170,24 +198,32 @@ class Neo4jRepository:
 
         with driver.session() as session:
             # 先删除关系
-            result = session.run("""
+            result = session.run(
+                """
                 MATCH ()-[r]->()
                 WHERE r.graph_id = $graph_id
                 DELETE r
                 RETURN count(r) as deleted
-            """, graph_id=graph_id)
+            """,
+                graph_id=graph_id,
+            )
             deleted_relations = result.single()["deleted"]
 
             # 再删除节点
-            result = session.run("""
+            result = session.run(
+                """
                 MATCH (n)
                 WHERE n.graph_id = $graph_id
                 DELETE n
                 RETURN count(n) as deleted
-            """, graph_id=graph_id)
+            """,
+                graph_id=graph_id,
+            )
             deleted_nodes = result.single()["deleted"]
 
-            logger.info(f"Cleared graph {graph_id}: deleted {deleted_nodes} nodes and {deleted_relations} relations")
+            logger.info(
+                f"Cleared graph {graph_id}: deleted {deleted_nodes} nodes and {deleted_relations} relations"
+            )
             return {"nodes": deleted_nodes, "relations": deleted_relations}
 
     def clear_all(self):
@@ -199,11 +235,7 @@ class Neo4jRepository:
             logger.warning("Neo4j database cleared")
 
     def search_entities(
-        self,
-        graph_id: str,
-        query: str,
-        limit: int = 20,
-        search_type: str = "all"
+        self, graph_id: str, query: str, limit: int = 20, search_type: str = "all"
     ) -> list[dict]:
         """模糊搜索实体和关系
 
@@ -230,7 +262,7 @@ class Neo4jRepository:
                     entity_query,
                     graph_id=graph_id,
                     search_query=query,
-                    limit_more=limit * 3  # 获取更多结果用于排序
+                    limit_more=limit * 3,  # 获取更多结果用于排序
                 )
 
                 entity_results = []
@@ -251,32 +283,34 @@ class Neo4jRepository:
                         LIMIT 5
                     """
                     related_result = session.run(
-                        related_query,
-                        graph_id=graph_id,
-                        entity_id=record["entity_id"]
+                        related_query, graph_id=graph_id, entity_id=record["entity_id"]
                     )
 
                     related_entities = []
                     for rel_record in related_result:
-                        related_entities.append({
-                            "relation_type": rel_record["rel_type"],
-                            "relation_name": rel_record.get("rel_name", ""),
-                            "entity_id": rel_record["target_id"],
-                            "entity_name": rel_record.get("target_name", ""),
-                            "entity_labels": rel_record.get("target_labels", [])
-                        })
+                        related_entities.append(
+                            {
+                                "relation_type": rel_record["rel_type"],
+                                "relation_name": rel_record.get("rel_name", ""),
+                                "entity_id": rel_record["target_id"],
+                                "entity_name": rel_record.get("target_name", ""),
+                                "entity_labels": rel_record.get("target_labels", []),
+                            }
+                        )
 
-                    entity_results.append({
-                        "id": record["entity_id"],
-                        "type": "entity",
-                        "name": name,
-                        "label": node.get("label", ""),
-                        "description": description,
-                        "labels": list(node.labels),
-                        "properties": dict(node),
-                        "related_entities": related_entities,
-                        "relevance": relevance
-                    })
+                    entity_results.append(
+                        {
+                            "id": record["entity_id"],
+                            "type": "entity",
+                            "name": name,
+                            "label": node.get("label", ""),
+                            "description": description,
+                            "labels": list(node.labels),
+                            "properties": dict(node),
+                            "related_entities": related_entities,
+                            "relevance": relevance,
+                        }
+                    )
 
                 # 按相关性排序并取前 limit 个
                 entity_results.sort(key=lambda x: x["relevance"], reverse=True)
@@ -297,10 +331,7 @@ class Neo4jRepository:
                     LIMIT $limit_more
                 """
                 relation_result = session.run(
-                    relation_query,
-                    graph_id=graph_id,
-                    search_query=query,
-                    limit_more=limit * 3
+                    relation_query, graph_id=graph_id, search_query=query, limit_more=limit * 3
                 )
 
                 relation_results = []
@@ -309,25 +340,29 @@ class Neo4jRepository:
                     rel_desc = record.get("rel_description", "")
 
                     # 计算相关性评分
-                    relevance = self._calculate_relevance(query, rel_name, rel_desc, record["rel_type"])
+                    relevance = self._calculate_relevance(
+                        query, rel_name, rel_desc, record["rel_type"]
+                    )
 
-                    relation_results.append({
-                        "id": record["relation_id"],
-                        "type": "relation",
-                        "name": rel_name,
-                        "label": record["rel_type"],
-                        "description": rel_desc,
-                        "properties": record["rel_props"],
-                        "source_entity": {
-                            "id": record["source_id"],
-                            "name": record.get("source_name", "")
-                        },
-                        "target_entity": {
-                            "id": record["target_id"],
-                            "name": record.get("target_name", "")
-                        },
-                        "relevance": relevance
-                    })
+                    relation_results.append(
+                        {
+                            "id": record["relation_id"],
+                            "type": "relation",
+                            "name": rel_name,
+                            "label": record["rel_type"],
+                            "description": rel_desc,
+                            "properties": record["rel_props"],
+                            "source_entity": {
+                                "id": record["source_id"],
+                                "name": record.get("source_name", ""),
+                            },
+                            "target_entity": {
+                                "id": record["target_id"],
+                                "name": record.get("target_name", ""),
+                            },
+                            "relevance": relevance,
+                        }
+                    )
 
                 # 按相关性排序
                 relation_results.sort(key=lambda x: x["relevance"], reverse=True)
@@ -338,7 +373,9 @@ class Neo4jRepository:
 
         return results
 
-    def _calculate_relevance(self, query: str, name: str, description: str = "", rel_type: str = "") -> float:
+    def _calculate_relevance(
+        self, query: str, name: str, description: str = "", rel_type: str = ""
+    ) -> float:
         """计算搜索相关性评分
 
         评分规则：
@@ -383,12 +420,7 @@ class Neo4jRepository:
 
         return 0.4
 
-    def get_related_entities(
-        self,
-        graph_id: str,
-        entity_id: str,
-        depth: int = 1
-    ) -> list[dict]:
+    def get_related_entities(self, graph_id: str, entity_id: str, depth: int = 1) -> list[dict]:
         """获取指定实体的关联实体
 
         Args:
@@ -416,31 +448,26 @@ class Neo4jRepository:
                 LIMIT 50
             """
 
-            result = session.run(
-                query,
-                graph_id=graph_id,
-                entity_id=entity_id
-            )
+            result = session.run(query, graph_id=graph_id, entity_id=entity_id)
 
             related = []
             for record in result:
-                related.append({
-                    "id": record["id"],
-                    "name": record.get("name", ""),
-                    "label": record.get("label", ""),
-                    "description": record.get("description", ""),
-                    "labels": record["labels"],
-                    "properties": record["props"],
-                    "connection_count": record["connection_count"]
-                })
+                related.append(
+                    {
+                        "id": record["id"],
+                        "name": record.get("name", ""),
+                        "label": record.get("label", ""),
+                        "description": record.get("description", ""),
+                        "labels": record["labels"],
+                        "properties": record["props"],
+                        "connection_count": record["connection_count"],
+                    }
+                )
 
             return related
 
     def search_by_similarity(
-        self,
-        graph_id: str,
-        query_embedding: list,
-        limit: int = 10
+        self, graph_id: str, query_embedding: list, limit: int = 10
     ) -> list[dict]:
         """基于 embedding 相似度搜索实体
 
@@ -471,17 +498,19 @@ class Neo4jRepository:
                     score = cosine_similarity(query_embedding, node_embedding)
 
                     if score > 0.3:  # 相似度阈值
-                        entities_with_scores.append({
-                            "id": record["entity_id"],
-                            "type": "entity",
-                            "name": node.get("name", ""),
-                            "label": node.get("label", ""),
-                            "description": node.get("description", ""),
-                            "labels": list(node.labels),
-                            "properties": dict(node),
-                            "related_entities": [],
-                            "relevance": score
-                        })
+                        entities_with_scores.append(
+                            {
+                                "id": record["entity_id"],
+                                "type": "entity",
+                                "name": node.get("name", ""),
+                                "label": node.get("label", ""),
+                                "description": node.get("description", ""),
+                                "labels": list(node.labels),
+                                "properties": dict(node),
+                                "related_entities": [],
+                                "relevance": score,
+                            }
+                        )
 
             # 按相似度排序
             entities_with_scores.sort(key=lambda x: x["relevance"], reverse=True)

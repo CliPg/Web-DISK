@@ -1,16 +1,16 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+import logging
 from contextlib import asynccontextmanager
 
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from backend.api import documents, graphs, knowledge_graph, tasks
 from backend.core.config import settings
 from backend.db.session import init_db
-from backend.api import documents, tasks, knowledge_graph, graphs
-import logging
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -55,11 +55,7 @@ app.include_router(graphs.router, prefix=settings.API_V1_PREFIX)
 @app.get("/")
 async def root():
     """健康检查"""
-    return {
-        "name": settings.PROJECT_NAME,
-        "version": settings.VERSION,
-        "status": "running"
-    }
+    return {"name": settings.PROJECT_NAME, "version": settings.VERSION, "status": "running"}
 
 
 @app.get("/health")
@@ -69,11 +65,4 @@ async def health():
 
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("main:app", host=settings.HOST, port=settings.PORT, reload=True, log_level="info")

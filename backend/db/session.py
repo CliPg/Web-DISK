@@ -1,6 +1,7 @@
-from backend.core.dependencies import engine, SessionLocal, get_db
-from backend.models.database import Base
 import logging
+
+from backend.core.dependencies import engine
+from backend.models.database import Base
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
 """Embedding 服务 - 使用 Ollama 生成本地向量"""
+
 import logging
 from typing import Optional
+
 from langchain_community.embeddings import OllamaEmbeddings
-from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def get_embedding_model() -> OllamaEmbeddings:
     if _embedding_model is None:
         _embedding_model = OllamaEmbeddings(
             model="nomic-embed-text",  # Ollama 推荐的 embedding 模型
-            base_url="http://localhost:11434"
+            base_url="http://localhost:11434",
         )
     return _embedding_model
 

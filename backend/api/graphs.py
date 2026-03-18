@@ -1,19 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import Optional
 import logging
 import os
 
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
 from backend.core.dependencies import get_db
-from backend.models.database import KnowledgeGraph as DBKnowledgeGraph, Document as DBDocument, Task as DBTask
+from backend.db.neo4j import Neo4jRepository
+from backend.models.database import Document as DBDocument
+from backend.models.database import KnowledgeGraph as DBKnowledgeGraph
+from backend.models.database import Task as DBTask
 from backend.models.schemas import (
     KnowledgeGraphCreate,
-    KnowledgeGraphUpdate,
-    KnowledgeGraphResponse,
     KnowledgeGraphListResponse,
+    KnowledgeGraphResponse,
+    KnowledgeGraphUpdate,
 )
-from backend.db.neo4j import Neo4jRepository
-from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +48,11 @@ async def list_graphs(
     # 确保存在默认图谱
     ensure_default_graph(db)
 
-    graphs = db.query(DBKnowledgeGraph).order_by(
-        DBKnowledgeGraph.is_default.desc(),
-        DBKnowledgeGraph.created_at.desc()
-    ).all()
+    graphs = (
+        db.query(DBKnowledgeGraph)
+        .order_by(DBKnowledgeGraph.is_default.desc(), DBKnowledgeGraph.created_at.desc())
+        .all()
+    )
 
     return KnowledgeGraphListResponse(
         graphs=[KnowledgeGraphResponse.model_validate(g) for g in graphs]
@@ -64,9 +66,7 @@ async def create_graph(
 ):
     """创建知识图谱"""
     # 检查名称是否已存在
-    existing = db.query(DBKnowledgeGraph).filter(
-        DBKnowledgeGraph.name == graph_data.name
-    ).first()
+    existing = db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.name == graph_data.name).first()
     if existing:
         raise HTTPException(status_code=400, detail="知识图谱名称已存在")
 
@@ -119,10 +119,11 @@ async def update_graph(
 
     # 检查名称是否重复
     if graph_data.name and graph_data.name != graph.name:
-        existing = db.query(DBKnowledgeGraph).filter(
-            DBKnowledgeGraph.name == graph_data.name,
-            DBKnowledgeGraph.id != graph_id
-        ).first()
+        existing = (
+            db.query(DBKnowledgeGraph)
+            .filter(DBKnowledgeGraph.name == graph_data.name, DBKnowledgeGraph.id != graph_id)
+            .first()
+        )
         if existing:
             raise HTTPException(status_code=400, detail="知识图谱名称已存在")
 
@@ -172,9 +173,7 @@ async def delete_graph(
         db.commit()
 
         logger.info(f"Deleted knowledge graph: {graph_id}, with {len(documents)} documents")
-        return {
-            "message": f"知识图谱已删除，同时删除了 {len(documents)} 个关联文档"
-        }
+        return {"message": f"知识图谱已删除，同时删除了 {len(documents)} 个关联文档"}
 
     except Exception as e:
         db.rollback()
@@ -194,9 +193,9 @@ async def set_default_graph(
         raise HTTPException(status_code=404, detail="知识图谱不存在")
 
     # 取消所有图谱的默认状态
-    db.query(DBKnowledgeGraph).filter(
-        DBKnowledgeGraph.is_default == True
-    ).update({"is_default": False})
+    db.query(DBKnowledgeGraph).filter(DBKnowledgeGraph.is_default == True).update(
+        {"is_default": False}
+    )
 
     # 设置新的默认图谱
     graph.is_default = True
@@ -244,8 +243,8 @@ async def clear_graph(
         return {
             "message": f"已清空知识图谱，删除了 {deleted_stats['nodes']} 个实体和 {deleted_stats['relations']} 个关系，{len(documents)} 个文档已重置为待处理状态",
             "reset_documents": len(documents),
-            "deleted_nodes": deleted_stats['nodes'],
-            "deleted_relations": deleted_stats['relations']
+            "deleted_nodes": deleted_stats["nodes"],
+            "deleted_relations": deleted_stats["relations"],
         }
 
     except Exception as e:

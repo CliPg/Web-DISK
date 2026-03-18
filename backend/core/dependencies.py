@@ -1,14 +1,14 @@
 from functools import lru_cache
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
 
 from backend.core.config import settings
 
 # SQLite Database
 engine = create_engine(
-    f"sqlite:///{settings.SQLITE_DB_PATH}",
-    connect_args={"check_same_thread": False}
+    f"sqlite:///{settings.SQLITE_DB_PATH}", connect_args={"check_same_thread": False}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

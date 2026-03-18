@@ -1,17 +1,21 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Text, ForeignKey, Boolean
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.sql import func
-from backend.models.schemas import TaskStatus, DocumentStatus
-import uuid
+
+from backend.models.schemas import DocumentStatus, TaskStatus
 
 
 class Base(DeclarativeBase):
     """数据库基类"""
+
     pass
 
 
 class KnowledgeGraph(Base):
     """知识图谱表"""
+
     __tablename__ = "knowledge_graphs"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -28,11 +32,14 @@ class KnowledgeGraph(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # 关联文档
-    documents = relationship("Document", back_populates="knowledge_graph", cascade="all, delete-orphan")
+    documents = relationship(
+        "Document", back_populates="knowledge_graph", cascade="all, delete-orphan"
+    )
 
 
 class Document(Base):
     """文档表"""
+
     __tablename__ = "documents"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -56,6 +63,7 @@ class Document(Base):
 
 class Task(Base):
     """任务表"""
+
     __tablename__ = "tasks"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))

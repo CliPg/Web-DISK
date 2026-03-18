@@ -1,11 +1,12 @@
 from celery import Celery
+
 from backend.core.config import settings
 
 celery_app = Celery(
     "web_disk",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["backend.tasks.document_tasks"]
+    include=["backend.tasks.document_tasks"],
 )
 
 # 配置

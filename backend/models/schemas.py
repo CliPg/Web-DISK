@@ -1,11 +1,13 @@
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import datetime
 from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class TaskStatus(str, Enum):
     """任务状态枚举"""
+
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -14,6 +16,7 @@ class TaskStatus(str, Enum):
 
 class DocumentStatus(str, Enum):
     """文档状态枚举"""
+
     UPLOADING = "uploading"
     PENDING = "pending"
     PROCESSING = "processing"
@@ -23,8 +26,10 @@ class DocumentStatus(str, Enum):
 
 # ==================== Request Models ====================
 
+
 class DocumentUploadResponse(BaseModel):
     """文档上传响应"""
+
     document_id: str
     filename: str
     task_id: str
@@ -33,29 +38,33 @@ class DocumentUploadResponse(BaseModel):
 
 # ==================== Response Models ====================
 
+
 class EntityResponse(BaseModel):
     """实体响应"""
+
     label: str
     name: str
 
     class Config:
         # 不序列化embedding字段，太大
-        exclude_fields = {'embedding'}
+        exclude_fields = {"embedding"}
 
 
 class RelationResponse(BaseModel):
     """关系响应"""
+
     start_entity: str
     end_entity: str
     label: str
     name: str
 
     class Config:
-        exclude_fields = {'embedding'}
+        exclude_fields = {"embedding"}
 
 
 class DocumentResponse(BaseModel):
     """文档响应"""
+
     id: str
     filename: str
     original_filename: str
@@ -82,12 +91,14 @@ class DocumentResponse(BaseModel):
 
 class DocumentListResponse(BaseModel):
     """文档列表响应"""
+
     documents: list[DocumentResponse]
     total: int
 
 
 class TaskProgress(BaseModel):
     """任务进度信息"""
+
     task_id: str
     status: TaskStatus
     progress: float = Field(ge=0, le=1, default=0)
@@ -101,6 +112,7 @@ class TaskProgress(BaseModel):
 
 class TaskResponse(BaseModel):
     """任务响应"""
+
     id: str
     document_id: str
     status: TaskStatus
@@ -123,6 +135,7 @@ class TaskResponse(BaseModel):
 
 class KnowledgeGraphStats(BaseModel):
     """知识图谱统计"""
+
     total_entities: int
     total_relations: int
     entity_types: dict[str, int]
@@ -131,20 +144,24 @@ class KnowledgeGraphStats(BaseModel):
 
 # ==================== Knowledge Graph Models ====================
 
+
 class KnowledgeGraphCreate(BaseModel):
     """创建知识图谱请求"""
+
     name: str = Field(..., min_length=2, max_length=50)
     description: Optional[str] = Field(None, max_length=200)
 
 
 class KnowledgeGraphUpdate(BaseModel):
     """更新知识图谱请求"""
+
     name: Optional[str] = Field(None, min_length=2, max_length=50)
     description: Optional[str] = Field(None, max_length=200)
 
 
 class KnowledgeGraphResponse(BaseModel):
     """知识图谱响应"""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -161,4 +178,5 @@ class KnowledgeGraphResponse(BaseModel):
 
 class KnowledgeGraphListResponse(BaseModel):
     """知识图谱列表响应"""
+
     graphs: list[KnowledgeGraphResponse]

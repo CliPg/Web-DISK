@@ -1,22 +1,25 @@
-import uuid
+import logging
 import shutil
+import uuid
 from pathlib import Path
-from typing import Generator, Optional
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Query, Form
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
-from backend.core.dependencies import get_db, get_settings
 from backend.core.config import Settings
-from backend.models.database import Document as DBDocument, Task as DBTask, KnowledgeGraph as DBKnowledgeGraph
+from backend.core.dependencies import get_db, get_settings
+from backend.models.database import Document as DBDocument
+from backend.models.database import KnowledgeGraph as DBKnowledgeGraph
+from backend.models.database import Task as DBTask
 from backend.models.schemas import (
-    DocumentUploadResponse,
-    DocumentResponse,
     DocumentListResponse,
+    DocumentResponse,
     DocumentStatus,
+    DocumentUploadResponse,
     TaskStatus,
 )
 from backend.tasks.document_tasks import process_document
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +35,7 @@ def get_upload_dir(settings: Settings = Depends(get_settings)) -> Path:
 def ensure_default_graph(db: Session) -> DBKnowledgeGraph:
     """确保存在默认知识图谱"""
     from backend.api.graphs import ensure_default_graph as _ensure_default_graph
+
     return _ensure_default_graph(db)
 
 
@@ -57,7 +61,7 @@ async def upload_document(
     if file_ext not in settings.ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=400,
-            detail=f"不支持的文件类型，仅支持: {', '.join(settings.ALLOWED_EXTENSIONS)}"
+            detail=f"不支持的文件类型，仅支持: {', '.join(settings.ALLOWED_EXTENSIONS)}",
         )
 
     # 确定目标知识图谱
@@ -138,10 +142,17 @@ async def list_documents(
     result = []
     for doc in documents:
         # 获取最新任务
-        latest_task = db.query(DBTask).filter(DBTask.document_id == doc.id).order_by(DBTask.created_at.desc()).first()
+        latest_task = (
+            db.query(DBTask)
+            .filter(DBTask.document_id == doc.id)
+            .order_by(DBTask.created_at.desc())
+            .first()
+        )
 
         if latest_task:
-            logger.info(f"Document {doc.id}: task.started_at={latest_task.started_at}, task.status={latest_task.status}")
+            logger.info(
+                f"Document {doc.id}: task.started_at={latest_task.started_at}, task.status={latest_task.status}"
+            )
 
         # 直接构造响应字典
         doc_dict = {
@@ -157,11 +168,17 @@ async def list_documents(
             "updated_at": doc.updated_at,
             "completed_at": doc.completed_at,
             "graph_id": doc.graph_id,
-            "task_started_at": latest_task.started_at.isoformat() if latest_task and latest_task.started_at else None,
-            "task_completed_at": latest_task.completed_at.isoformat() if latest_task and latest_task.completed_at else None,
+            "task_started_at": latest_task.started_at.isoformat()
+            if latest_task and latest_task.started_at
+            else None,
+            "task_completed_at": latest_task.completed_at.isoformat()
+            if latest_task and latest_task.completed_at
+            else None,
             "input_tokens": latest_task.input_tokens if latest_task else 0,
             "output_tokens": latest_task.output_tokens if latest_task else 0,
-            "total_tokens": (latest_task.input_tokens + latest_task.output_tokens) if latest_task else 0,
+            "total_tokens": (latest_task.input_tokens + latest_task.output_tokens)
+            if latest_task
+            else 0,
         }
         result.append(DocumentResponse(**doc_dict))
 
@@ -176,7 +193,12 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
     if not document:
         raise HTTPException(status_code=404, detail="文档不存在")
 
-    latest_task = db.query(DBTask).filter(DBTask.document_id == document_id).order_by(DBTask.created_at.desc()).first()
+    latest_task = (
+        db.query(DBTask)
+        .filter(DBTask.document_id == document_id)
+        .order_by(DBTask.created_at.desc())
+        .first()
+    )
 
     # 直接构造响应字典
     doc_dict = {
@@ -192,11 +214,17 @@ async def get_document(document_id: str, db: Session = Depends(get_db)):
         "updated_at": document.updated_at,
         "completed_at": document.completed_at,
         "graph_id": document.graph_id,
-        "task_started_at": latest_task.started_at.isoformat() if latest_task and latest_task.started_at else None,
-        "task_completed_at": latest_task.completed_at.isoformat() if latest_task and latest_task.completed_at else None,
+        "task_started_at": latest_task.started_at.isoformat()
+        if latest_task and latest_task.started_at
+        else None,
+        "task_completed_at": latest_task.completed_at.isoformat()
+        if latest_task and latest_task.completed_at
+        else None,
         "input_tokens": latest_task.input_tokens if latest_task else 0,
         "output_tokens": latest_task.output_tokens if latest_task else 0,
-        "total_tokens": (latest_task.input_tokens + latest_task.output_tokens) if latest_task else 0,
+        "total_tokens": (latest_task.input_tokens + latest_task.output_tokens)
+        if latest_task
+        else 0,
     }
 
     return DocumentResponse(**doc_dict)
@@ -258,6 +286,7 @@ async def start_processing(document_id: str, db: Session = Depends(get_db)):
     # 提交Celery任务
     try:
         from datetime import datetime
+
         celery_task = process_document.delay(
             document_id=document.id,
             file_path=document.file_path,
@@ -267,8 +296,8 @@ async def start_processing(document_id: str, db: Session = Depends(get_db)):
         task.celery_task_id = celery_task.id
         task.status = TaskStatus.PROCESSING
         task.started_at = datetime.utcnow()
-        task.current_step="任务已提交"
-        task.message="开始处理文档..."
+        task.current_step = "任务已提交"
+        task.message = "开始处理文档..."
         db.commit()
 
         logger.info(f"Task started: task_id={task.id}, started_at={task.started_at}")
@@ -285,11 +314,7 @@ async def start_processing(document_id: str, db: Session = Depends(get_db)):
         db.commit()
         raise HTTPException(status_code=500, detail=f"任务提交失败: {str(e)}")
 
-    return {
-        "message": "任务已开始",
-        "task_id": task.id,
-        "celery_task_id": celery_task.id
-    }
+    return {"message": "任务已开始", "task_id": task.id, "celery_task_id": celery_task.id}
 
 
 @router.post("/batch-build")
@@ -342,8 +367,9 @@ async def batch_build_documents(
 
     # 提交Celery批量任务
     try:
-        from backend.tasks.document_tasks import batch_build_documents
         from datetime import datetime
+
+        from backend.tasks.document_tasks import batch_build_documents
 
         celery_task = batch_build_documents.delay(
             document_ids=[doc.id for doc in documents],
@@ -365,7 +391,7 @@ async def batch_build_documents(
             "message": "批量任务已开始",
             "task_id": batch_task.id,
             "celery_task_id": celery_task.id,
-            "document_count": len(documents)
+            "document_count": len(documents),
         }
 
     except Exception as e:

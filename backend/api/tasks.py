@@ -1,15 +1,15 @@
 import json
+import logging
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from backend.core.dependencies import get_db
-from backend.models.database import Task as DBTask, Document as DBDocument
-from backend.models.schemas import TaskResponse, TaskProgress, TaskStatus
-from celery.result import AsyncResult
+from backend.models.database import Task as DBTask
+from backend.models.schemas import TaskResponse, TaskStatus
 from backend.tasks.celery_app import celery_app
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,7 @@ async def stream_task_progress(task_id: str, db: Session = Depends(get_db)):
 
             # 等待再检查
             import asyncio
+
             await asyncio.sleep(1)
 
     return StreamingResponse(
@@ -107,10 +108,7 @@ async def list_tasks(
     total = query.count()
     tasks = query.order_by(DBTask.created_at.desc()).offset(skip).limit(limit).all()
 
-    return {
-        "tasks": [TaskResponse.model_validate(t) for t in tasks],
-        "total": total
-    }
+    return {"tasks": [TaskResponse.model_validate(t) for t in tasks], "total": total}
 
 
 @router.post("/{task_id}/cancel")

@@ -3,8 +3,9 @@
 
 运行方式: uv run python backend/db/migrate.py
 """
+
 import sqlite3
-from pathlib import Path
+
 from backend.core.config import settings
 
 
@@ -21,7 +22,9 @@ def migrate_database():
 
     try:
         # 检查是否已有 knowledge_graphs 表
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='knowledge_graphs'")
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='knowledge_graphs'"
+        )
         kg_table_exists = cursor.fetchone() is not None
 
         # 创建 knowledge_graphs 表
@@ -47,11 +50,13 @@ def migrate_database():
         # 检查 documents 表是否有 graph_id 列
         cursor.execute("PRAGMA table_info(documents)")
         columns = [col[1] for col in cursor.fetchall()]
-        has_graph_id = 'graph_id' in columns
+        has_graph_id = "graph_id" in columns
 
         if not has_graph_id:
             print("添加 documents.graph_id 列...")
-            cursor.execute("ALTER TABLE documents ADD COLUMN graph_id VARCHAR REFERENCES knowledge_graphs(id)")
+            cursor.execute(
+                "ALTER TABLE documents ADD COLUMN graph_id VARCHAR REFERENCES knowledge_graphs(id)"
+            )
             print("✓ graph_id 列添加成功")
         else:
             print("documents.graph_id 列已存在")
@@ -62,17 +67,23 @@ def migrate_database():
 
         if not default_graph:
             import uuid
+
             default_id = str(uuid.uuid4())
             print(f"创建默认知识图谱 (ID: {default_id})...")
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO knowledge_graphs (id, name, description, is_default, entity_count, relation_count, document_count)
                 VALUES (?, ?, ?, 1, 0, 0, 0)
-            """, (default_id, "默认知识图谱", "系统默认的知识图谱"))
+            """,
+                (default_id, "默认知识图谱", "系统默认的知识图谱"),
+            )
             print("✓ 默认知识图谱创建成功")
 
             # 将所有现有文档关联到默认知识图谱
-            cursor.execute("UPDATE documents SET graph_id = ? WHERE graph_id IS NULL", (default_id,))
-            print(f"✓ 现有文档已关联到默认知识图谱")
+            cursor.execute(
+                "UPDATE documents SET graph_id = ? WHERE graph_id IS NULL", (default_id,)
+            )
+            print("✓ 现有文档已关联到默认知识图谱")
         else:
             print("默认知识图谱已存在")
 
