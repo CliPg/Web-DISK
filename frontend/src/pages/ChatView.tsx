@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { Send, User, Bot, Trash2, Loader2, Sparkles } from 'lucide-react'
 import { chatApi } from '../services/api'
-import { ChatMessage } from '../types'
+import type { ChatMessage } from '../types'
 import GlassCard from '../components/ui/GlassCard'
 
 export default function ChatView() {
