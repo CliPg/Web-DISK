@@ -2771,6 +2771,7 @@ dependencies = [
     { name = "celery", extra = ["redis"] },
     { name = "disk-kg" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "neo4j" },
@@ -2785,7 +2786,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -2795,6 +2795,7 @@ requires-dist = [
     { name = "celery", extras = ["redis"], specifier = ">=5.4.0" },
     { name = "disk-kg", specifier = ">=1.0.0" },
     { name = "fastapi", specifier = ">=0.115.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "langchain-community", specifier = ">=0.3.14" },
     { name = "langchain-core", specifier = ">=0.3.0" },
     { name = "neo4j", specifier = ">=5.26.0" },
@@ -2809,7 +2810,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.27.0" },
     { name = "pytest", specifier = ">=8.0.0" },
     { name = "ruff", specifier = ">=0.8.0" },
 ]

@@ -5,7 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api import documents, graphs, knowledge_graph, tasks
+from backend.api import chat, documents, graphs, knowledge_graph, tasks
 from backend.core.config import settings
 from backend.db.session import init_db
 
@@ -50,6 +50,7 @@ app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
 app.include_router(tasks.router, prefix=settings.API_V1_PREFIX)
 app.include_router(knowledge_graph.router, prefix=settings.API_V1_PREFIX)
 app.include_router(graphs.router, prefix=settings.API_V1_PREFIX)
+app.include_router(chat.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/")

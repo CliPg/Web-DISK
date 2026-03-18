@@ -10,6 +10,7 @@ import {
   Network,
   Clock,
   History,
+  MessageSquare,
 } from 'lucide-react'
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { icon: Search, label: 'Search', path: '/search'},
   { icon: Clock, label: 'History', path: '/history'},
   { icon: Activity, label: 'Monitor', path: '/pipeline'},
+  { icon: MessageSquare, label: 'Chat', path: '/chat'},
 ]
 
 export default function Sidebar() {

@@ -502,3 +502,47 @@ export const graphsApi = {
     return response.json()
   },
 }
+
+/**
+ * 聊天API服务
+ */
+export const chatApi = {
+  /**
+   * 发送聊天消息
+   */
+  async chat(messages: Array<{ role: string; content: string }>, model?: string): Promise<{
+    id: string
+    object: string
+    created: number
+    model: string
+    choices: Array<{
+      index: number
+      message: {
+        role: string
+        content: string
+      }
+      finish_reason: string
+    }>
+    usage?: {
+      prompt_tokens: number
+      completion_tokens: number
+      total_tokens: number
+    }
+  }> {
+    const response = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages,
+        model,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.detail || '聊天请求失败')
+    }
+
+    return response.json()
+  },
+}

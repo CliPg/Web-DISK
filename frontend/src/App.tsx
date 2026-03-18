@@ -6,6 +6,7 @@ import DocumentsView from './pages/DocumentsView'
 import SearchView from './pages/SearchView'
 import HistoryView from './pages/HistoryView'
 import PipelineView from './pages/PipelineView'
+import ChatView from './pages/ChatView'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="search" element={<SearchView />} />
           <Route path="history" element={<HistoryView />} />
           <Route path="pipeline" element={<PipelineView />} />
+          <Route path="chat" element={<ChatView />} />
         </Route>
       </Routes>
     </BrowserRouter>
