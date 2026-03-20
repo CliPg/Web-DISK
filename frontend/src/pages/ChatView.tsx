@@ -53,17 +53,12 @@ export default function ChatView() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-40px)] max-w-5xl mx-auto w-full p-4">
+    <div className="h-full flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00b4d8] to-[#0096c7] flex items-center justify-center shadow-lg shadow-[#00b4d8]/20">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-[#f0f4f8] tracking-tight">AI Assistant</h1>
-            <p className="text-sm text-[#94a3b8]">DISK 知识图谱智能助手</p>
-          </div>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-[#f0f4f8]">AI Assistant</h1>
+          <p className="text-[#64748b] text-sm mt-0.5">DISK 知识图谱智能助手</p>
         </div>
         <button
           onClick={clearHistory}
