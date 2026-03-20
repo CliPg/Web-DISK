@@ -6,3 +6,4 @@ data/
 .env
 .venv
 .claude
+docker-compose.y[a]ml

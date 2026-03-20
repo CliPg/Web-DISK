@@ -1,0 +1,26 @@
+services:
+  neo4j:
+    image: docker.io/library/neo4j:latest
+    container_name: neo4j_service
+    restart: unless-stopped
+    ports:
+      - "7474:7474" # Neo4j 浏览器 HTTP 端口
+      - "7687:7687" # Bolt 协议端口
+    environment:
+      # 设置初始密码，格式为：用户名/密码
+      - NEO4J_AUTH=neo4j/your_neo4j_password
+    volumes:
+      - neo4j_data:/data
+
+  redis:
+    image: docker.io/library/redis:latest
+    container_name: redis_service
+    restart: unless-stopped
+    ports:
+      - "6379:6379" # Redis 默认端口
+    volumes:
+      - redis_data:/data
+
+volumes:
+  neo4j_data:
+  redis_data:
