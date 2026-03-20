@@ -4,6 +4,10 @@ import { Send, User, Bot, Trash2, Loader2, Sparkles } from 'lucide-react'
 import { chatApi } from '../services/api'
 import type { ChatMessage } from '../types'
 import GlassCard from '../components/ui/GlassCard'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 export default function ChatView() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -105,12 +109,46 @@ export default function ChatView() {
                     <Bot className="w-5 h-5 text-[#00b4d8]" />
                   )}
                 </div>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                <div className={`max-w-[85%] rounded-2xl px-5 py-3 ${
                   msg.role === 'user'
                     ? 'bg-[#00b4d8] text-white rounded-tr-none'
                     : 'bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-tl-none'
                 }`}>
-                  <p className="text-base leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                  <div className={`prose prose-invert max-w-none prose-sm sm:prose-base ${
+                    msg.role === 'user' ? 'prose-p:text-white prose-p:my-0' : 'prose-p:text-[#f0f4f8]'
+                  }`}>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({ node, inline, className, children, ...props }: any) {
+                          const match = /language-(\w+)/.exec(className || '')
+                          return !inline && match ? (
+                            <SyntaxHighlighter
+                              style={vscDarkPlus}
+                              language={match[1]}
+                              PreTag="div"
+                              className="rounded-lg !my-4 !bg-[#0d121a]"
+                              {...props}
+                            >
+                              {String(children).replace(/\n$/, '')}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code className={`${className} bg-black/30 rounded px-1.5 py-0.5 font-mono text-sm`} {...props}>
+                              {children}
+                            </code>
+                          )
+                        },
+                        // 自定义链接样式，确保在深色背景下可见
+                        a: ({ node, ...props }) => <a className="text-[#00b4d8] hover:underline" {...props} />,
+                        // 自定义表格样式
+                        table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-[#2a3548] border border-[#2a3548]" {...props} /></div>,
+                        th: ({ node, ...props }) => <th className="px-4 py-2 bg-[#0d121a] text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider" {...props} />,
+                        td: ({ node, ...props }) => <td className="px-4 py-2 whitespace-nowrap text-sm border-t border-[#2a3548]" {...props} />,
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
                 </div>
               </motion.div>
             ))
