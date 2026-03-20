@@ -12,8 +12,8 @@ from disk import DISK
 from models.knowledge_graph import KnowledgeGraph
 from models.neo4j_connector import Neo4jConnector
 
+from backend.core.dependencies import SessionLocal
 from backend.db.neo4j import Neo4jRepository
-from backend.db.session import SessionLocal
 from backend.models.database import Document as DBDocument
 from backend.models.database import KnowledgeGraph as DBKnowledgeGraph
 from backend.models.database import Task as DBTask

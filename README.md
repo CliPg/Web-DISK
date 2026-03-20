@@ -159,7 +159,7 @@ uv run uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 ```bash
 source .venv/bin/activate
-uv run celery -A backend.worker.celery_app worker --loglevel=info
+uv run celery -A backend.tasks.celery_app worker --loglevel=info
 ```
 
 **启动前端服务**（新终端窗口）：
