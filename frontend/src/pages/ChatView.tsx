@@ -71,7 +71,7 @@ export default function ChatView() {
 
       {/* Chat Container */}
       <GlassCard className="flex-1 flex flex-col overflow-hidden border-[#2a3548]/50 mb-4">
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-[#2a3548]">
+        <div className="flex-1 overflow-y-auto px-6 sm:px-12 py-8 space-y-8 scrollbar-thin scrollbar-thumb-[#2a3548]">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-16 h-16 rounded-2xl bg-[#00b4d8]/10 flex items-center justify-center">
@@ -104,13 +104,14 @@ export default function ChatView() {
                     <Bot className="w-5 h-5 text-[#00b4d8]" />
                   )}
                 </div>
-                <div className={`max-w-[85%] rounded-2xl px-5 py-3 ${
+                <div className={`max-w-[85%] rounded-2xl px-6 py-4 flex flex-col justify-center ${
                   msg.role === 'user'
                     ? 'bg-[#00b4d8] text-white rounded-tr-none'
                     : 'bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-tl-none'
                 }`}>
-                  <div className={`prose prose-invert max-w-none prose-sm sm:prose-base ${
-                    msg.role === 'user' ? 'prose-p:text-white prose-p:my-0' : 'prose-p:text-[#f0f4f8]'
+                  {/* 使用 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 强制去除首尾段落的默认外边距，保留纯粹的 px-6 左右留白 */}
+                  <div className={`prose prose-invert max-w-none prose-sm sm:prose-base leading-relaxed [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 ${
+                    msg.role === 'user' ? 'prose-p:text-white' : 'prose-p:text-[#f0f4f8]'
                   }`}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
@@ -141,7 +142,7 @@ export default function ChatView() {
                         td: ({ node, ...props }) => <td className="px-4 py-2 whitespace-normal text-sm border-t border-[#2a3548] break-words" {...props} />,
                       }}
                     >
-                      {msg.content}
+                      {msg.content.trim()}
                     </ReactMarkdown>
                   </div>
                 </div>
@@ -171,21 +172,21 @@ export default function ChatView() {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="输入你的问题..."
-              className="flex-1 bg-[#1a2332] border border-[#2a3548] text-[#f0f4f8] rounded-xl px-4 py-3 focus:outline-none focus:border-[#00b4d8] transition-colors placeholder:text-[#4a5568]"
+              className="w-full bg-[#1a2332] border border-[#2a3548] text-[#f0f4f8] rounded-2xl pl-6 pr-16 py-4 focus:outline-none focus:border-[#00b4d8] transition-colors placeholder:text-[#4a5568] shadow-inner"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className={`p-3 rounded-xl transition-all duration-200 ${
+              className={`absolute right-2.5 p-2 rounded-xl transition-all duration-200 flex items-center justify-center ${
                 !input.trim() || isLoading
-                  ? 'bg-[#1a2332] text-[#4a5568] cursor-not-allowed'
-                  : 'bg-[#00b4d8] text-white shadow-lg shadow-[#00b4d8]/20 hover:scale-105 active:scale-95'
+                  ? 'text-[#4a5568] cursor-not-allowed bg-transparent'
+                  : 'bg-[#00b4d8] text-white shadow-md shadow-[#00b4d8]/30 hover:scale-105 active:scale-95'
               }`}
             >
-              <Send className="w-5 h-5" />
+              <Send className="w-5 h-5 -ml-0.5" />
             </button>
           </div>
-          <p className="mt-2 text-center text-[10px] text-[#4a5568]">
+          <p className="mt-3 text-center text-[10px] text-[#4a5568]">
             AI 助手可能会产生错误的信息，请核实重要内容。
           </p>
         </div>
