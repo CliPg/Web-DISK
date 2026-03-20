@@ -142,8 +142,8 @@ export default function ChatView() {
                         a: ({ node, ...props }) => <a className="text-[#00b4d8] hover:underline" {...props} />,
                         // 自定义表格样式
                         table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-[#2a3548] border border-[#2a3548]" {...props} /></div>,
-                        th: ({ node, ...props }) => <th className="px-4 py-2 bg-[#0d121a] text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider" {...props} />,
-                        td: ({ node, ...props }) => <td className="px-4 py-2 whitespace-nowrap text-sm border-t border-[#2a3548]" {...props} />,
+                        th: ({ node, ...props }) => <th className="px-4 py-2 bg-[#0d121a] text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider whitespace-normal" {...props} />,
+                        td: ({ node, ...props }) => <td className="px-4 py-2 whitespace-normal text-sm border-t border-[#2a3548] break-words" {...props} />,
                       }}
                     >
                       {msg.content}
