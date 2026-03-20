@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # Database
     SQLITE_DB_PATH: Path = Path(__file__).resolve().parent.parent.parent / "data" / "app.db"
 
+    # Static Files
+    STATIC_DIR: Path = Path(__file__).resolve().parent.parent / "static"
+
     # Neo4j
     NEO4J_URI: str = "neo4j://127.0.0.1:7687"
     NEO4J_USER: str = "neo4j"

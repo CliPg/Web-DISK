@@ -1,9 +1,12 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from backend.api import chat, documents, graphs, knowledge_graph, tasks
 from backend.core.config import settings
@@ -53,16 +56,36 @@ app.include_router(graphs.router, prefix=settings.API_V1_PREFIX)
 app.include_router(chat.router, prefix=settings.API_V1_PREFIX)
 
 
-@app.get("/")
-async def root():
-    """健康检查"""
-    return {"name": settings.PROJECT_NAME, "version": settings.VERSION, "status": "running"}
-
-
 @app.get("/health")
 async def health():
     """健康检查端点"""
     return {"status": "healthy"}
+
+
+# 静态文件托管与路由兜底
+if os.path.exists(settings.STATIC_DIR):
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # 如果是 API 请求前缀但未匹配到路由，则返回 404
+        if full_path.startswith("api") or full_path.startswith(settings.API_V1_PREFIX.lstrip("/")):
+            return {"detail": "Not Found"}
+            
+        # 尝试返回对应的静态文件 (如 assets/index.js, favicon.ico 等)
+        file_path = settings.STATIC_DIR / full_path
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # 兜底返回 index.html，支持 SPA 路由
+        index_file = settings.STATIC_DIR / "index.html"
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+            
+        return {"detail": "Frontend index.html not found"}
+else:
+    @app.get("/")
+    async def root():
+        """如果静态目录不存在，显示健康信息"""
+        return {"name": settings.PROJECT_NAME, "version": settings.VERSION, "status": "running"}
 
 
 if __name__ == "__main__":
