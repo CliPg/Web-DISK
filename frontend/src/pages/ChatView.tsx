@@ -55,14 +55,15 @@ export default function ChatView() {
   return (
     <div className="h-full flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between" style={{ marginBottom: '8px' }}>
         <div>
           <h1 className="text-xl font-semibold text-[#f0f4f8]">AI Assistant</h1>
           <p className="text-[#64748b] text-sm mt-0.5">DISK 知识图谱智能助手</p>
         </div>
         <button
           onClick={clearHistory}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[#94a3b8] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+          className="flex items-center gap-2 rounded-lg text-[#94a3b8] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+          style={{ padding: '6px 12px' }}
         >
           <Trash2 className="w-4 h-4" />
           <span className="text-sm font-medium">清空对话</span>
@@ -91,28 +92,35 @@ export default function ChatView() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 key={index}
-                className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                className={`flex ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+                style={{ gap: '16px', marginBottom: '8px' }}
               >
                 <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center ${
                   msg.role === 'user' 
                     ? 'bg-[#1a2332] border border-[#2a3548]' 
                     : 'bg-[#00b4d8]/10 border border-[#00b4d8]/20'
-                }`}>
+                }`}
+                style={{ marginTop: '2px' }}
+                >
                   {msg.role === 'user' ? (
                     <User className="w-5 h-5 text-[#94a3b8]" />
                   ) : (
                     <Bot className="w-5 h-5 text-[#00b4d8]" />
                   )}
                 </div>
-                <div className={`max-w-[85%] rounded-2xl px-6 py-4 flex flex-col justify-center ${
+                <div className={`max-w-[85%] rounded-2xl flex flex-col justify-center ${
                   msg.role === 'user'
                     ? 'bg-[#00b4d8] text-white rounded-tr-none'
                     : 'bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-tl-none'
-                }`}>
+                }`}
+                style={{ padding: '14px 24px' }}
+                >
                   {/* 使用 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 强制去除首尾段落的默认外边距，保留纯粹的 px-6 左右留白 */}
                   <div className={`prose prose-invert max-w-none prose-sm sm:prose-base leading-relaxed [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 ${
                     msg.role === 'user' ? 'prose-p:text-white' : 'prose-p:text-[#f0f4f8]'
-                  }`}>
+                  }`}
+                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  >
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
                       components={{
@@ -150,11 +158,12 @@ export default function ChatView() {
             ))
           )}
           {isLoading && (
-            <div className="flex gap-4">
+            <div className="flex" style={{ gap: '16px' }}>
               <div className="w-10 h-10 rounded-xl bg-[#00b4d8]/10 border border-[#00b4d8]/20 flex items-center justify-center">
                 <Bot className="w-5 h-5 text-[#00b4d8]" />
               </div>
-              <div className="bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-2">
+              <div className="bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-2xl rounded-tl-none flex items-center" 
+                style={{ padding: '10px 18px', gap: '8px' }}>
                 <Loader2 className="w-4 h-4 animate-spin text-[#00b4d8]" />
                 <span className="text-sm text-[#94a3b8]">思考中...</span>
               </div>
@@ -164,29 +173,31 @@ export default function ChatView() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-[#2a3548]/50 bg-[#0d121a]/50">
-          <div className="relative flex items-center gap-3">
+        <div className="border-t border-[#2a3548]/50 bg-[#0d121a]/50" style={{ padding: '20px 24px' }}>
+          <div className="relative flex items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="输入你的问题..."
-              className="w-full bg-[#1a2332] border border-[#2a3548] text-[#f0f4f8] rounded-2xl pl-6 pr-16 py-4 focus:outline-none focus:border-[#00b4d8] transition-colors placeholder:text-[#4a5568] shadow-inner"
+              className="w-full bg-[#1a2332] border border-[#2a3548] text-[#f0f4f8] rounded-2xl focus:outline-none focus:border-[#00b4d8] transition-colors placeholder:text-[#4a5568] shadow-inner"
+              style={{ padding: '14px 64px 14px 20px', fontSize: '14px' }}
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className={`absolute right-2.5 p-2 rounded-xl transition-all duration-200 flex items-center justify-center ${
+              className={`absolute rounded-xl transition-all duration-200 flex items-center justify-center ${
                 !input.trim() || isLoading
                   ? 'text-[#4a5568] cursor-not-allowed bg-transparent'
                   : 'bg-[#00b4d8] text-white shadow-md shadow-[#00b4d8]/30 hover:scale-105 active:scale-95'
               }`}
+              style={{ right: '8px', padding: '8px' }}
             >
-              <Send className="w-5 h-5 -ml-0.5" />
+              <Send className="w-5 h-5" style={{ marginRight: '-1px', marginTop: '-1px' }} />
             </button>
           </div>
-          <p className="mt-3 text-center text-[10px] text-[#4a5568]">
+          <p className="text-center text-[10px] text-[#4a5568]" style={{ marginTop: '12px' }}>
             AI 助手可能会产生错误的信息，请核实重要内容。
           </p>
         </div>
