@@ -57,8 +57,8 @@ export default function ChatView() {
       {/* Header */}
       <div className="flex items-start justify-between" style={{ marginBottom: '8px' }}>
         <div>
-          <h1 className="text-xl font-semibold text-[#f0f4f8]">AI Assistant</h1>
-          <p className="text-[#64748b] text-sm mt-0.5">DISK 知识图谱智能助手</p>
+          <h1 className="text-xl font-semibold text-[#f0f4f8]">数智化学习智能体</h1>
+          <p className="text-[#64748b] text-sm mt-0.5">基于 DISK 知识图谱的智能助手</p>
         </div>
         <button
           onClick={clearHistory}
