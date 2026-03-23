@@ -57,12 +57,12 @@ export default function ChatView() {
       {/* Header */}
       <div className="flex items-start justify-between" style={{ marginBottom: '8px' }}>
         <div>
-          <h1 className="text-xl font-semibold text-[#f0f4f8]">数智化学习智能体</h1>
-          <p className="text-[#64748b] text-sm mt-0.5">基于 DISK 知识图谱的智能助手</p>
+          <h1 className="text-xl font-semibold text-neo-text">数智化学习智能体</h1>
+          <p className="text-neo-text-muted text-sm mt-0.5">基于 DISK 知识图谱的智能助手</p>
         </div>
         <button
           onClick={clearHistory}
-          className="flex items-center gap-2 rounded-lg text-[#94a3b8] hover:text-red-400 hover:bg-red-400/10 transition-colors"
+          className="flex items-center gap-2 rounded-lg text-neo-text-secondary hover:text-red-400 hover:bg-red-400/10 transition-colors"
           style={{ padding: '6px 12px' }}
         >
           <Trash2 className="w-4 h-4" />
@@ -71,7 +71,7 @@ export default function ChatView() {
       </div>
 
       {/* Chat Container */}
-      <GlassCard className="flex-1 flex flex-col overflow-hidden border-[#2a3548]/50 mb-4">
+      <GlassCard className="flex-1 flex flex-col overflow-hidden border-neo-border/50 mb-4">
         <div className="flex-1 overflow-y-auto px-6 sm:px-12 py-8 space-y-8 scrollbar-thin scrollbar-thumb-[#2a3548]">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
@@ -79,8 +79,8 @@ export default function ChatView() {
                 <Sparkles className="w-8 h-8 text-[#00b4d8]" />
               </div>
               <div className="max-w-md">
-                <h2 className="text-xl font-semibold text-[#f0f4f8] mb-2">你好！我是 DISK 助手</h2>
-                <p className="text-[#94a3b8]">
+                <h2 className="text-xl font-semibold text-neo-text mb-2">你好！我是 DISK 助手</h2>
+                <p className="text-neo-text-secondary">
                   你可以问我关于知识图谱、文档处理或者系统功能的问题。
                   我会根据你提供的上下文为你提供精准的解答。
                 </p>
@@ -97,13 +97,13 @@ export default function ChatView() {
               >
                 <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center ${
                   msg.role === 'user' 
-                    ? 'bg-[#1a2332] border border-[#2a3548]' 
+                    ? 'bg-neo-surface-light border border-neo-border' 
                     : 'bg-[#00b4d8]/10 border border-[#00b4d8]/20'
                 }`}
                 style={{ marginTop: '2px' }}
                 >
                   {msg.role === 'user' ? (
-                    <User className="w-5 h-5 text-[#94a3b8]" />
+                    <User className="w-5 h-5 text-neo-text-secondary" />
                   ) : (
                     <Bot className="w-5 h-5 text-[#00b4d8]" />
                   )}
@@ -111,15 +111,15 @@ export default function ChatView() {
                 <div className={`max-w-[85%] rounded-2xl flex flex-col justify-center ${
                   msg.role === 'user'
                     ? 'bg-[#00b4d8] text-white rounded-tr-none'
-                    : 'bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-tl-none'
+                    : 'bg-neo-surface-light text-neo-text border border-neo-border rounded-tl-none'
                 }`}
                 style={{ padding: '14px 24px' }}
                 >
                   {/* 使用 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 强制去除首尾段落的默认外边距，保留纯粹的 px-6 左右留白 */}
-                  <div className={`prose prose-invert max-w-none prose-sm sm:prose-base leading-relaxed [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 ${
-                    msg.role === 'user' ? 'prose-p:text-white' : 'prose-p:text-[#f0f4f8]'
+                  <div className={`prose prose-invert max-w-none prose-sm sm:prose-base [&>p:first-child]:mt-0 [&>p:last-child]:mb-0 ${
+                    msg.role === 'user' ? 'prose-p:text-white' : 'prose-p:text-neo-text'
                   }`}
-                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  style={{ wordBreak: 'break-word' }}
                   >
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
@@ -142,12 +142,18 @@ export default function ChatView() {
                             </code>
                           )
                         },
+                        // 自定义标题样式
+                        h1: ({ node, ...props }) => <h1 className="text-xl font-bold border-b border-neo-border/50 pb-1" style={{ margin: '16px 0 8px 0' }} {...props} />,
+                        h2: ({ node, ...props }) => <h2 className="text-lg font-bold" style={{ margin: '12px 0 6px 0' }} {...props} />,
+                        h3: ({ node, ...props }) => <h3 className="text-base font-bold" style={{ margin: '8px 0 4px 0' }} {...props} />,
+                        // 自定义段落样式，设为极小间距
+                        p: ({ node, ...props }) => <p style={{ margin: '2px 0' }} {...props} />,
                         // 自定义链接样式，确保在深色背景下可见
                         a: ({ node, ...props }) => <a className="text-[#00b4d8] hover:underline" {...props} />,
                         // 自定义表格样式
-                        table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-[#2a3548] border border-[#2a3548]" {...props} /></div>,
-                        th: ({ node, ...props }) => <th className="px-4 py-2 bg-[#0d121a] text-left text-xs font-medium text-[#94a3b8] uppercase tracking-wider whitespace-normal" {...props} />,
-                        td: ({ node, ...props }) => <td className="px-4 py-2 whitespace-normal text-sm border-t border-[#2a3548] break-words" {...props} />,
+                        table: ({ node, ...props }) => <div className="overflow-x-auto my-4"><table className="min-w-full divide-y divide-[#2a3548] border border-neo-border" {...props} /></div>,
+                        th: ({ node, ...props }) => <th className="px-4 py-2 bg-[#0d121a] text-left text-xs font-medium text-neo-text-secondary uppercase tracking-wider whitespace-normal" {...props} />,
+                        td: ({ node, ...props }) => <td className="px-4 py-2 whitespace-normal text-sm border-t border-neo-border break-words" {...props} />,
                       }}
                     >
                       {msg.content.trim()}
@@ -162,10 +168,10 @@ export default function ChatView() {
               <div className="w-10 h-10 rounded-xl bg-[#00b4d8]/10 border border-[#00b4d8]/20 flex items-center justify-center">
                 <Bot className="w-5 h-5 text-[#00b4d8]" />
               </div>
-              <div className="bg-[#1a2332] text-[#f0f4f8] border border-[#2a3548] rounded-2xl rounded-tl-none flex items-center" 
+              <div className="bg-neo-surface-light text-neo-text border border-neo-border rounded-2xl rounded-tl-none flex items-center" 
                 style={{ padding: '10px 18px', gap: '8px' }}>
                 <Loader2 className="w-4 h-4 animate-spin text-[#00b4d8]" />
-                <span className="text-sm text-[#94a3b8]">思考中...</span>
+                <span className="text-sm text-neo-text-secondary">思考中...</span>
               </div>
             </div>
           )}
@@ -173,7 +179,7 @@ export default function ChatView() {
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-[#2a3548]/50 bg-[#0d121a]/50" style={{ padding: '20px 24px' }}>
+        <div className="border-t border-neo-border/50 bg-[#0d121a]/50" style={{ padding: '20px 24px' }}>
           <div className="relative flex items-center">
             <input
               type="text"
@@ -181,7 +187,7 @@ export default function ChatView() {
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
               placeholder="输入你的问题..."
-              className="w-full bg-[#1a2332] border border-[#2a3548] text-[#f0f4f8] rounded-2xl focus:outline-none focus:border-[#00b4d8] transition-colors placeholder:text-[#4a5568] shadow-inner"
+              className="w-full bg-neo-surface-light border border-neo-border text-neo-text rounded-2xl focus:outline-none focus:border-[#00b4d8] transition-colors placeholder:text-[#4a5568] shadow-inner"
               style={{ padding: '14px 64px 14px 20px', fontSize: '14px' }}
             />
             <button

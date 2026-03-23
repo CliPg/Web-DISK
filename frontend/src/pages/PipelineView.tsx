@@ -356,12 +356,12 @@ export default function PipelineView() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-[#f0f4f8]">流程监控</h1>
-          <p className="text-[#64748b] text-sm mt-0.5">实时追踪知识抽取进度</p>
+          <h1 className="text-xl font-semibold text-neo-text">流程监控</h1>
+          <p className="text-neo-text-muted text-sm mt-0.5">实时追踪知识抽取进度</p>
         </div>
         <div className="flex items-center gap-2">
           {currentDoc && (
-            <span className="text-sm text-[#94a3b8]">{currentDoc.original_filename}</span>
+            <span className="text-sm text-neo-text-secondary">{currentDoc.original_filename}</span>
           )}
           <div className="text-sm text-[#00b4d8] font-mono">{formatTime(elapsedTime)}</div>
         </div>
@@ -376,10 +376,10 @@ export default function PipelineView() {
                 <FileText className="w-6 h-6 text-[#00b4d8]" />
               </div>
               <div>
-                <h2 className="font-semibold text-[#f0f4f8]">{currentDoc.original_filename}</h2>
+                <h2 className="font-semibold text-neo-text">{currentDoc.original_filename}</h2>
                 <div className="flex items-center gap-2" style={{ marginTop: '4px' }}>
-                  <Clock className="w-4 h-4 text-[#64748b]" />
-                  <span className="text-sm text-[#64748b]">
+                  <Clock className="w-4 h-4 text-neo-text-muted" />
+                  <span className="text-sm text-neo-text-muted">
                     {currentTask?.message || '准备处理...'}
                   </span>
                 </div>
@@ -387,14 +387,14 @@ export default function PipelineView() {
             </div>
             <div className="text-right">
               <div className="text-3xl font-bold text-[#00b4d8]">{overallProgress}%</div>
-              <div className="text-sm text-[#64748b]">
+              <div className="text-sm text-neo-text-muted">
                 {completedStages}/{stages.length} 阶段完成
               </div>
               {/* 实时统计 */}
               {(entitiesCount > 0 || relationsCount > 0) && (
                 <div className="flex items-center gap-2" style={{ marginTop: '8px' }}>
                   <Network className="w-3.5 h-3.5 text-[#00c853]" />
-                  <span className="text-sm text-[#94a3b8]">{entitiesCount} 实体 · {relationsCount} 关系</span>
+                  <span className="text-sm text-neo-text-secondary">{entitiesCount} 实体 · {relationsCount} 关系</span>
                 </div>
               )}
             </div>
@@ -412,11 +412,11 @@ export default function PipelineView() {
         </NeoCard>
       ) : (
         <NeoCard className="flex flex-col items-center justify-center text-center" variant="elevated" style={{ padding: '32px' }}>
-          <div className="w-14 h-14 rounded-xl bg-[#1a2332] flex items-center justify-center border border-[#2a3548]" style={{ padding: '8px', marginBottom: '16px' }}>
-            <FileText className="w-6 h-6 text-[#64748b]" />
+          <div className="w-14 h-14 rounded-xl bg-neo-surface-light flex items-center justify-center border border-neo-border" style={{ padding: '8px', marginBottom: '16px' }}>
+            <FileText className="w-6 h-6 text-neo-text-muted" />
           </div>
-          <p className="text-[#94a3b8]">暂无运行中的流程</p>
-          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>
+          <p className="text-neo-text-secondary">暂无运行中的流程</p>
+          <p className="text-sm text-neo-text-muted" style={{ marginTop: '4px' }}>
             {documents.length > 0 ? '选择一个待处理的文档开始构建' : '上传文档后，处理流程将在此处显示'}
           </p>
         </NeoCard>
@@ -431,7 +431,7 @@ export default function PipelineView() {
               <div className="w-8 h-8 rounded-lg bg-[#00b4d8]/10 flex items-center justify-center" style={{ padding: '6px' }}>
                 <Loader2 className="w-4 h-4 text-[#00b4d8]" />
               </div>
-              <h3 className="font-medium text-[#f0f4f8]">处理阶段</h3>
+              <h3 className="font-medium text-neo-text">处理阶段</h3>
             </div>
             <div className="space-y-4 flex-1 overflow-y-auto">
               {stages.map((stage, index) => {
@@ -453,7 +453,7 @@ export default function PipelineView() {
                           className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                             stage.status === 'completed' ? 'border-[#00c853] bg-[#00c853]/10' :
                             stage.status === 'running' ? 'border-[#00b4d8] bg-[#00b4d8]/10' :
-                            'border-[#2a3548] bg-[#1a2332]'
+                            'border-neo-border bg-neo-surface-light'
                           }`}
                         >
                           {stage.status === 'completed' ? (
@@ -461,7 +461,7 @@ export default function PipelineView() {
                           ) : stage.status === 'running' ? (
                             <StatusIcon className={`w-4 h-4 text-[#00b4d8] ${config.animate ? 'animate-spin' : ''}`} style={{ color: config.color }} />
                           ) : (
-                            <span className="text-xs font-medium text-[#64748b]">{index + 1}</span>
+                            <span className="text-xs font-medium text-neo-text-muted">{index + 1}</span>
                           )}
                         </div>
                         {index < stages.length - 1 && (
@@ -478,10 +478,10 @@ export default function PipelineView() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <h4 className={`font-medium ${isActive ? 'text-[#00b4d8]' : 'text-[#f0f4f8]'}`}>
+                            <h4 className={`font-medium ${isActive ? 'text-[#00b4d8]' : 'text-neo-text'}`}>
                               {stage.name}
                             </h4>
-                            <p className="text-sm text-[#64748b]">{stage.description}</p>
+                            <p className="text-sm text-neo-text-muted">{stage.description}</p>
                           </div>
                           {stage.status === 'running' && (
                             <span className="text-sm font-medium text-[#00b4d8]">{stage.progress}%</span>
@@ -505,8 +505,8 @@ export default function PipelineView() {
 
                         {/* Current Step Message */}
                         {isActive && currentTask?.current_step && (
-                          <div className="mt-2 p-2 rounded bg-[#0a0e17] border border-[#2a3548]">
-                            <p className="text-xs text-[#94a3b8]">{currentTask.current_step}</p>
+                          <div className="mt-2 p-2 rounded bg-neo-bg border border-neo-border">
+                            <p className="text-xs text-neo-text-secondary">{currentTask.current_step}</p>
                           </div>
                         )}
                       </div>
@@ -517,13 +517,13 @@ export default function PipelineView() {
             </div>
 
             {/* Overall Stats */}
-            <div className="mt-6 pt-4 border-t border-[#2a3548]">
+            <div className="mt-6 pt-4 border-t border-neo-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#64748b]" />
-                  <span className="text-sm text-[#64748b]">总用时</span>
+                  <Clock className="w-4 h-4 text-neo-text-muted" />
+                  <span className="text-sm text-neo-text-muted">总用时</span>
                 </div>
-                <span className="text-sm font-mono text-[#f0f4f8]">{formatTime(elapsedTime)}</span>
+                <span className="text-sm font-mono text-neo-text">{formatTime(elapsedTime)}</span>
               </div>
             </div>
           </NeoCard>
@@ -535,7 +535,7 @@ export default function PipelineView() {
             <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
               <div className="flex items-center gap-2">
                 <Terminal className="w-5 h-5 text-[#00b4d8]" />
-                <h3 className="font-medium text-[#f0f4f8]">活动日志</h3>
+                <h3 className="font-medium text-neo-text">活动日志</h3>
               </div>
               {logs.length > 0 && (
                 <button
@@ -558,29 +558,29 @@ export default function PipelineView() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ delay: index * 0.02 }}
-                      className="flex items-start gap-3 border-b border-[#2a3548] last:border-0"
+                      className="flex items-start gap-3 border-b border-neo-border last:border-0"
                       style={{ padding: '8px 0' }}
                     >
-                      <span className="text-xs text-[#64748b] font-mono w-14 shrink-0">{log.timestamp}</span>
+                      <span className="text-xs text-neo-text-muted font-mono w-14 shrink-0">{log.timestamp}</span>
                       <div
                         className={`rounded text-xs font-medium shrink-0 ${
                           log.level === 'info' ? 'bg-[#00b4d8]/10 text-[#00b4d8]' :
                           log.level === 'success' ? 'bg-[#00c853]/10 text-[#00c853]' :
                           log.level === 'warning' ? 'bg-[#ff9800]/10 text-[#ff9800]' :
                           log.level === 'error' ? 'bg-[#f44336]/10 text-[#f44336]' :
-                          'bg-[#64748b]/10 text-[#64748b]'
+                          'bg-[#64748b]/10 text-neo-text-muted'
                         }`}
                         style={{ padding: '2px 6px' }}
                       >
                         {log.level.toUpperCase().slice(0, 4)}
                       </div>
-                      <p className="text-sm text-[#94a3b8] flex-1 min-w-0">{log.message}</p>
+                      <p className="text-sm text-neo-text-secondary flex-1 min-w-0">{log.message}</p>
                     </motion.div>
                   ))}
                 </AnimatePresence>
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-sm text-[#64748b]">暂无日志</p>
+                  <p className="text-sm text-neo-text-muted">暂无日志</p>
                 </div>
               )}
             </div>
@@ -591,19 +591,19 @@ export default function PipelineView() {
       {/* Documents Selector */}
       {documents.length > 0 && !selectedDocId && (
         <NeoCard variant="elevated" style={{ padding: '20px' }}>
-          <p className="text-sm text-[#64748b]" style={{ marginBottom: '12px' }}>选择要处理的文档：</p>
+          <p className="text-sm text-neo-text-muted" style={{ marginBottom: '12px' }}>选择要处理的文档：</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {documents.map((doc) => (
               <motion.button
                 key={doc.id}
-                className="rounded-lg bg-[#1a2332] hover:bg-[#2a3548] border border-[#2a3548] text-left transition-colors"
+                className="rounded-lg bg-neo-surface-light hover:bg-[#2a3548] border border-neo-border text-left transition-colors"
                 style={{ padding: '12px' }}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => handleStart(doc.id)}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#f0f4f8] truncate">{doc.original_filename}</span>
+                  <span className="text-sm text-neo-text truncate">{doc.original_filename}</span>
                   <Play className="w-4 h-4 text-[#00c853] shrink-0" />
                 </div>
               </motion.button>

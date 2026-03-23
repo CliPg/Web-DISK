@@ -171,8 +171,8 @@ export default function GraphsView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#f0f4f8]">知识图谱管理</h1>
-          <p className="text-[#64748b] text-sm mt-0.5">创建和管理您的知识图谱</p>
+          <h1 className="text-xl font-semibold text-neo-text">知识图谱管理</h1>
+          <p className="text-neo-text-muted text-sm mt-0.5">创建和管理您的知识图谱</p>
         </div>
         <div className="flex items-center gap-3">
           <motion.button
@@ -188,7 +188,7 @@ export default function GraphsView() {
           <button
             onClick={fetchGraphs}
             disabled={isLoading}
-            className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
+            className="text-sm text-neo-text-muted hover:text-neo-text hover:bg-neo-surface-light rounded-lg transition-colors flex items-center gap-1.5"
             style={{ padding: '6px 12px 6px 16px' }}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -205,8 +205,8 @@ export default function GraphsView() {
               <Network className="w-5 h-5 text-[#00b4d8]" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#f0f4f8]">{graphs.length}</p>
-              <p className="text-xs text-[#64748b]">知识图谱</p>
+              <p className="text-2xl font-semibold text-neo-text">{graphs.length}</p>
+              <p className="text-xs text-neo-text-muted">知识图谱</p>
             </div>
           </div>
         </NeoCard>
@@ -216,10 +216,10 @@ export default function GraphsView() {
               <GitBranch className="w-5 h-5 text-[#3b82f6]" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#f0f4f8]">
+              <p className="text-2xl font-semibold text-neo-text">
                 {graphs.reduce((sum, g) => sum + g.entity_count, 0)}
               </p>
-              <p className="text-xs text-[#64748b]">实体总数</p>
+              <p className="text-xs text-neo-text-muted">实体总数</p>
             </div>
           </div>
         </NeoCard>
@@ -229,10 +229,10 @@ export default function GraphsView() {
               <FileText className="w-5 h-5 text-[#00c853]" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#f0f4f8]">
+              <p className="text-2xl font-semibold text-neo-text">
                 {graphs.reduce((sum, g) => sum + g.document_count, 0)}
               </p>
-              <p className="text-xs text-[#64748b]">关联文档</p>
+              <p className="text-xs text-neo-text-muted">关联文档</p>
             </div>
           </div>
         </NeoCard>
@@ -242,10 +242,10 @@ export default function GraphsView() {
               <Network className="w-5 h-5 text-[#a855f7]" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#f0f4f8]">
+              <p className="text-2xl font-semibold text-neo-text">
                 {graphs.reduce((sum, g) => sum + g.relation_count, 0)}
               </p>
-              <p className="text-xs text-[#64748b]">关系总数</p>
+              <p className="text-xs text-neo-text-muted">关系总数</p>
             </div>
           </div>
         </NeoCard>
@@ -255,14 +255,14 @@ export default function GraphsView() {
       <NeoCard className="flex-1 overflow-hidden" variant="elevated">
         {isLoading ? (
           <div className="h-full flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-[#64748b] animate-spin" />
+            <Loader2 className="w-8 h-8 text-neo-text-muted animate-spin" />
           </div>
         ) : graphs.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
             {graphs.map((graph, index) => (
               <div
                 key={graph.id}
-                className="flex items-center gap-4 p-5 hover:bg-[#1a2332]/50 group"
+                className="flex items-center gap-4 p-5 hover:bg-neo-surface-light/50 group"
                 style={{ marginBottom: index < graphs.length - 1 ? '0' : '0', minHeight: '72px' }}
               >
                 {/* Graph Icon */}
@@ -273,7 +273,7 @@ export default function GraphsView() {
                 {/* Graph Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium text-[#f0f4f8]">{graph.name}</h3>
+                    <h3 className="font-medium text-neo-text">{graph.name}</h3>
                     {graph.is_default && (
                       <span className="px-2 py-0.5 text-xs font-medium rounded-md bg-[#00c853]/10 text-[#00c853]">
                         默认
@@ -281,9 +281,9 @@ export default function GraphsView() {
                     )}
                   </div>
                   {graph.description && (
-                    <p className="text-sm text-[#64748b] line-clamp-1">{graph.description}</p>
+                    <p className="text-sm text-neo-text-muted line-clamp-1">{graph.description}</p>
                   )}
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-[#64748b]">
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-neo-text-muted">
                     <span className="flex items-center gap-1">
                       <div className="w-1 h-1 rounded-full bg-[#3b82f6]" />
                       {graph.entity_count} 实体
@@ -304,7 +304,7 @@ export default function GraphsView() {
                 {/* Actions */}
                 <div className="relative">
                   <motion.button
-                    className="w-9 h-9 rounded-lg hover:bg-[#2a3548] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8] transition-all"
+                    className="w-9 h-9 rounded-lg hover:bg-[#2a3548] flex items-center justify-center text-neo-text-muted hover:text-neo-text transition-all"
                     whileTap={{ scale: 0.9 }}
                     onClick={(e) => {
                       e.stopPropagation()
@@ -324,7 +324,7 @@ export default function GraphsView() {
                         className="absolute right-0 top-11 w-44 neo-card-elevated py-1.5 z-20"
                       >
                         <button
-                          className="w-full px-4 py-2.5 text-left text-sm text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8] flex items-center gap-2"
+                          className="w-full px-4 py-2.5 text-left text-sm text-neo-text-secondary hover:bg-neo-surface-light hover:text-neo-text flex items-center gap-2"
                           onClick={() => openEditModal(graph)}
                         >
                           <Edit className="w-4 h-4" />
@@ -342,7 +342,7 @@ export default function GraphsView() {
                           )}
                           清空数据
                         </button>
-                        <div className="mx-4 my-1 border-t border-[#2a3548]" />
+                        <div className="mx-4 my-1 border-t border-neo-border" />
                         <button
                           className="w-full px-4 py-2.5 text-left text-sm text-[#f44336] hover:bg-[#f44336]/10 flex items-center gap-2"
                           onClick={() => handleDelete(graph.id)}
@@ -365,11 +365,11 @@ export default function GraphsView() {
         ) : (
           /* Empty State */
           <div className="h-full flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
-              <Network className="w-8 h-8 text-[#64748b]" />
+            <div className="w-16 h-16 rounded-xl bg-neo-surface-light flex items-center justify-center mb-4 border border-neo-border">
+              <Network className="w-8 h-8 text-neo-text-muted" />
             </div>
-            <p className="text-[#94a3b8] mb-1">暂无知识图谱</p>
-            <p className="text-sm text-[#64748b] mb-4">创建您的第一个知识图谱</p>
+            <p className="text-neo-text-secondary mb-1">暂无知识图谱</p>
+            <p className="text-sm text-neo-text-muted mb-4">创建您的第一个知识图谱</p>
             <motion.button
               className="px-4 py-2 neo-btn-primary rounded-lg font-medium text-sm flex items-center gap-2"
               whileHover={{ scale: 1.02 }}
@@ -402,9 +402,9 @@ export default function GraphsView() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
-                <h2 className="text-lg font-semibold text-[#f0f4f8]">新建知识图谱</h2>
+                <h2 className="text-lg font-semibold text-neo-text">新建知识图谱</h2>
                 <motion.button
-                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                  className="w-8 h-8 rounded-lg hover:bg-neo-surface-light flex items-center justify-center text-neo-text-muted hover:text-neo-text"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={closeModal}
@@ -415,7 +415,7 @@ export default function GraphsView() {
 
               <div style={{ marginBottom: '2px' }}>
                 <div style={{ marginBottom: '20px' }}>
-                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
+                  <label className="block text-sm font-medium text-neo-text-secondary" style={{ marginBottom: '12px' }}>
                     名称 <span className="text-[#f44336]">*</span>
                   </label>
                   <input
@@ -434,7 +434,7 @@ export default function GraphsView() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
+                  <label className="block text-sm font-medium text-neo-text-secondary" style={{ marginBottom: '12px' }}>
                     描述
                   </label>
                   <textarea
@@ -505,9 +505,9 @@ export default function GraphsView() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
-                <h2 className="text-lg font-semibold text-[#f0f4f8]">编辑知识图谱</h2>
+                <h2 className="text-lg font-semibold text-neo-text">编辑知识图谱</h2>
                 <motion.button
-                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                  className="w-8 h-8 rounded-lg hover:bg-neo-surface-light flex items-center justify-center text-neo-text-muted hover:text-neo-text"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={closeModal}
@@ -518,7 +518,7 @@ export default function GraphsView() {
 
               <div style={{ marginBottom: '32px' }}>
                 <div style={{ marginBottom: '20px' }}>
-                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
+                  <label className="block text-sm font-medium text-neo-text-secondary" style={{ marginBottom: '12px' }}>
                     名称 <span className="text-[#f44336]">*</span>
                   </label>
                   <input
@@ -537,7 +537,7 @@ export default function GraphsView() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#94a3b8]" style={{ marginBottom: '12px' }}>
+                  <label className="block text-sm font-medium text-neo-text-secondary" style={{ marginBottom: '12px' }}>
                     描述
                   </label>
                   <textarea

@@ -310,11 +310,11 @@ export default function SearchView() {
               <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
                 <Network className="w-3 h-3 text-[#00b4d8]" />
               </div>
-              <span className="text-[#f0f4f8] truncate">
+              <span className="text-neo-text truncate">
                 {selectedGraph ? selectedGraph.name : '选择知识图谱'}
               </span>
             </div>
-            <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform shrink-0 ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-4 h-4 text-neo-text-muted transition-transform shrink-0 ${graphDropdownOpen ? 'rotate-180' : ''}`} />
           </motion.button>
 
           <AnimatePresence>
@@ -343,7 +343,7 @@ export default function SearchView() {
                     <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center shrink-0">
                       <Network className="w-3 h-3 text-[#00b4d8]" />
                     </div>
-                    <span className="text-[#f0f4f8] truncate">{graph.name}</span>
+                    <span className="text-neo-text truncate">{graph.name}</span>
                     {graph.is_default && (
                       <span className="px-1.5 py-0.5 text-xs bg-[#00c853]/20 text-[#00c853] rounded shrink-0">默认</span>
                     )}
@@ -353,7 +353,7 @@ export default function SearchView() {
                   </button>
                 ))}
                 {graphs.length === 0 && (
-                  <div className="text-center py-4 text-[#64748b] text-sm">
+                  <div className="text-center py-4 text-neo-text-muted text-sm">
                     暂无知识图谱
                   </div>
                 )}
@@ -373,9 +373,9 @@ export default function SearchView() {
         >
           <Sparkles className="w-7 h-7 text-white" />
         </motion.div>
-        <h1 className="text-2xl font-semibold text-[#f0f4f8]" style={{ marginBottom: '4px' }}>知识搜索</h1>
+        <h1 className="text-2xl font-semibold text-neo-text" style={{ marginBottom: '4px' }}>知识搜索</h1>
         <div className="flex items-center justify-center gap-2">
-          <p className="text-[#64748b] text-sm">搜索图谱中的实体或关系</p>
+          <p className="text-neo-text-muted text-sm">搜索图谱中的实体或关系</p>
         </div>
       </div>
 
@@ -383,7 +383,7 @@ export default function SearchView() {
       <NeoCard variant="elevated" style={{ padding: '2px' }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3" style={{ padding: '0 12px', flex: 1 }}>
-            <Search className="w-4 h-4 text-[#64748b] shrink-0" />
+            <Search className="w-4 h-4 text-neo-text-muted shrink-0" />
             <input
               type="text"
               value={query}
@@ -394,7 +394,7 @@ export default function SearchView() {
                 }
               }}
               placeholder="输入关键词搜索..."
-              className="flex-1 bg-transparent outline-none text-[#f0f4f8] placeholder:text-[#64748b] min-w-0"
+              className="flex-1 bg-transparent outline-none text-neo-text placeholder:text-neo-text-muted min-w-0"
               style={{ paddingTop: '8px', paddingBottom: '8px', fontSize: '14px' }}
               disabled={!selectedGraphId}
             />
@@ -405,7 +405,7 @@ export default function SearchView() {
               <motion.button
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="w-6 h-6 rounded-full bg-[#2a3548] flex items-center justify-center text-[#94a3b8] hover:bg-[#3b4a61] hover:text-[#f0f4f8] shrink-0"
+                className="w-6 h-6 rounded-full bg-[#2a3548] flex items-center justify-center text-neo-text-secondary hover:bg-[#3b4a61] hover:text-neo-text shrink-0"
                 style={{ padding: '4px' }}
                 onClick={() => {
                   setQuery('')
@@ -441,11 +441,11 @@ export default function SearchView() {
           >
             <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#64748b]" />
-                <span className="text-sm text-[#64748b]">最近搜索</span>
+                <Clock className="w-4 h-4 text-neo-text-muted" />
+                <span className="text-sm text-neo-text-muted">最近搜索</span>
               </div>
               <motion.button
-                className="text-xs text-[#64748b] hover:text-[#f0f4f8] flex items-center gap-1 transition-colors"
+                className="text-xs text-neo-text-muted hover:text-neo-text flex items-center gap-1 transition-colors"
                 onClick={clearAllRecentSearches}
                 whileTap={{ scale: 0.95 }}
               >
@@ -462,14 +462,14 @@ export default function SearchView() {
                   style={{ padding: '6px 10px' }}
                 >
                   <button
-                    className="text-sm text-[#94a3b8] hover:text-[#f0f4f8] flex-1"
+                    className="text-sm text-neo-text-secondary hover:text-neo-text flex-1"
                     onClick={() => handleQuickSearch(term)}
                     disabled={!selectedGraphId}
                   >
                     {term}
                   </button>
                   <motion.button
-                    className="w-5 h-5 rounded flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#2a3548] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                    className="w-5 h-5 rounded flex items-center justify-center text-neo-text-muted hover:text-neo-text hover:bg-[#2a3548] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                     onClick={(e) => deleteRecentSearch(term, e)}
                     whileTap={{ scale: 0.9 }}
                   >
@@ -490,7 +490,7 @@ export default function SearchView() {
           className="flex items-center justify-between gap-4 flex-wrap"
         >
           <div className="flex items-center gap-3">
-            <Filter className="w-4 h-4 text-[#64748b]" />
+            <Filter className="w-4 h-4 text-neo-text-muted" />
             <div className="flex gap-2">
               {typeFilters.map((filter) => (
                 <motion.button
@@ -498,7 +498,7 @@ export default function SearchView() {
                   className={`rounded-lg text-sm font-medium transition-colors ${
                     activeFilter === filter.value
                       ? 'bg-[#00b4d8] text-white'
-                      : 'text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8]'
+                      : 'text-neo-text-secondary hover:bg-neo-surface-light hover:text-neo-text'
                   }`}
                   style={{ padding: '8px 12px' }}
                   whileHover={{ scale: 1.02 }}
@@ -510,7 +510,7 @@ export default function SearchView() {
               ))}
             </div>
           </div>
-          <span className="text-sm text-[#64748b]">找到 {filteredResults.length} 个结果</span>
+          <span className="text-sm text-neo-text-muted">找到 {filteredResults.length} 个结果</span>
         </motion.div>
       )}
 
@@ -564,7 +564,7 @@ export default function SearchView() {
                       {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h3 className="font-medium text-[#f0f4f8]">{result.title}</h3>
+                          <h3 className="font-medium text-neo-text">{result.title}</h3>
                           <span
                             className="rounded-md text-xs font-medium text-white shrink-0"
                             style={{ backgroundColor: color, padding: '2px 8px' }}
@@ -572,22 +572,22 @@ export default function SearchView() {
                             {result.type === 'entity' ? '实体' : result.type === 'relation' ? '关系' : '文档'}
                           </span>
                         </div>
-                        <p className="text-sm text-[#94a3b8] line-clamp-2" style={{ marginBottom: '8px' }}>{result.description}</p>
+                        <p className="text-sm text-neo-text-secondary line-clamp-2" style={{ marginBottom: '8px' }}>{result.description}</p>
 
                         {/* Related Entities (for entity type) */}
                         {result.type === 'entity' && result.related_entities && result.related_entities.length > 0 && (
                           <div className="flex flex-wrap gap-2" style={{ marginBottom: '8px' }}>
-                            <span className="text-xs text-[#64748b]">关联:</span>
+                            <span className="text-xs text-neo-text-muted">关联:</span>
                             {result.related_entities.slice(0, 4).map((rel, idx) => (
                               <span
                                 key={idx}
-                                className="text-xs px-2 py-0.5 rounded bg-[#1a2332] text-[#94a3b8] border border-[#2a3548]"
+                                className="text-xs px-2 py-0.5 rounded bg-neo-surface-light text-neo-text-secondary border border-neo-border"
                               >
                                 {rel.relation_type} → {rel.entity_name}
                               </span>
                             ))}
                             {result.related_entities.length > 4 && (
-                              <span className="text-xs text-[#64748b]">
+                              <span className="text-xs text-neo-text-muted">
                                 +{result.related_entities.length - 4} 更多
                               </span>
                             )}
@@ -598,13 +598,13 @@ export default function SearchView() {
                         {result.type === 'relation' && (
                           <div className="flex items-center gap-2 text-sm" style={{ marginBottom: '8px' }}>
                             {result.source_entity && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-[#1a2332] text-[#94a3b8]">
+                              <span className="text-xs px-2 py-0.5 rounded bg-neo-surface-light text-neo-text-secondary">
                                 {result.source_entity.name}
                               </span>
                             )}
                             <ArrowRight className="w-3 h-3 text-[#22c55e]" />
                             {result.target_entity && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-[#1a2332] text-[#94a3b8]">
+                              <span className="text-xs px-2 py-0.5 rounded bg-neo-surface-light text-neo-text-secondary">
                                 {result.target_entity.name}
                               </span>
                             )}
@@ -615,7 +615,7 @@ export default function SearchView() {
                         {result.metadata && Object.keys(result.metadata).length > 0 && (
                           <div className="flex flex-wrap gap-x-4 gap-y-1">
                             {Object.entries(result.metadata).map(([key, value]) => (
-                              <span key={key} className="text-xs text-[#64748b]">
+                              <span key={key} className="text-xs text-neo-text-muted">
                                 <span className="text-[#4b5563]">{key}:</span> {value}
                               </span>
                             ))}
@@ -626,13 +626,13 @@ export default function SearchView() {
                       {/* Relevance & Arrow */}
                       <div className="flex flex-col items-end gap-2 shrink-0">
                         <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-[#1a2332] rounded-full overflow-hidden">
+                          <div className="w-16 h-1.5 bg-neo-surface-light rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full"
                               style={{ width: `${result.relevance * 100}%`, backgroundColor: color }}
                             />
                           </div>
-                          <span className="text-xs text-[#64748b] w-8 text-right">
+                          <span className="text-xs text-neo-text-muted w-8 text-right">
                             {Math.round(result.relevance * 100)}%
                           </span>
                         </div>
@@ -666,7 +666,7 @@ export default function SearchView() {
                         <Info className="w-5 h-5 text-white" />
                       </div>
                       <motion.button
-                        className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                        className="w-8 h-8 rounded-lg hover:bg-neo-surface-light flex items-center justify-center text-neo-text-muted hover:text-neo-text"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={closeDetailPanel}
@@ -676,7 +676,7 @@ export default function SearchView() {
                     </div>
 
                     {/* Title & Type */}
-                    <h2 className="text-lg font-semibold text-[#f0f4f8]" style={{ marginBottom: '8px' }}>
+                    <h2 className="text-lg font-semibold text-neo-text" style={{ marginBottom: '8px' }}>
                       {selectedResult.title}
                     </h2>
                     <span
@@ -687,14 +687,14 @@ export default function SearchView() {
                     </span>
 
                     {/* Description */}
-                    <p className="text-sm text-[#94a3b8] leading-relaxed" style={{ marginBottom: '24px' }}>
+                    <p className="text-sm text-neo-text-secondary leading-relaxed" style={{ marginBottom: '24px' }}>
                       {selectedResult.description || '暂无描述'}
                     </p>
 
                     {/* Related Entities (for entity type) */}
                     {selectedResult.type === 'entity' && selectedResult.related_entities && selectedResult.related_entities.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                        <h3 className="text-sm font-medium text-neo-text flex items-center gap-2" style={{ marginBottom: '12px' }}>
                           <Link2 className="w-4 h-4 text-[#00b4d8]" />
                           关联实体 ({selectedResult.related_entities.length})
                         </h3>
@@ -702,7 +702,7 @@ export default function SearchView() {
                           {selectedResult.related_entities.map((rel, idx) => (
                             <motion.div
                               key={idx}
-                              className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] hover:bg-[#111827] border border-[#2a3548] hover:border-[#3b4a61] cursor-pointer transition-all"
+                              className="flex items-center gap-3 p-3 rounded-lg bg-neo-bg hover:bg-neo-surface border border-neo-border hover:border-neo-border-light cursor-pointer transition-all"
                               whileHover={{ x: 2 }}
                             >
                               <div
@@ -719,10 +719,10 @@ export default function SearchView() {
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-[#f0f4f8] truncate">
+                                <p className="text-sm font-medium text-neo-text truncate">
                                   {rel.entity_name}
                                 </p>
-                                <p className="text-xs text-[#64748b]" style={{ marginTop: '2px' }}>
+                                <p className="text-xs text-neo-text-muted" style={{ marginTop: '2px' }}>
                                   {rel.relation_type || rel.relation_name}
                                 </p>
                               </div>
@@ -735,19 +735,19 @@ export default function SearchView() {
                     {/* Relation Details (for relation type) */}
                     {selectedResult.type === 'relation' && (
                       <div>
-                        <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                        <h3 className="text-sm font-medium text-neo-text flex items-center gap-2" style={{ marginBottom: '12px' }}>
                           <Link2 className="w-4 h-4 text-[#00b4d8]" />
                           连接实体
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {selectedResult.source_entity && (
-                            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-neo-bg border border-neo-border">
                               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#3b82f620' }}>
                                 <Circle className="w-3 h-3" style={{ color: '#3b82f6' }} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-[#64748b]">起始实体</p>
-                                <p className="text-sm font-medium text-[#f0f4f8]">
+                                <p className="text-xs text-neo-text-muted">起始实体</p>
+                                <p className="text-sm font-medium text-neo-text">
                                   {selectedResult.source_entity.name}
                                 </p>
                               </div>
@@ -757,13 +757,13 @@ export default function SearchView() {
                             <ArrowRight className="w-5 h-5 text-[#22c55e]" />
                           </div>
                           {selectedResult.target_entity && (
-                            <div className="flex items-center gap-3 p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-neo-bg border border-neo-border">
                               <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#3b82f620' }}>
                                 <Circle className="w-3 h-3" style={{ color: '#3b82f6' }} />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-[#64748b]">目标实体</p>
-                                <p className="text-sm font-medium text-[#f0f4f8]">
+                                <p className="text-xs text-neo-text-muted">目标实体</p>
+                                <p className="text-sm font-medium text-neo-text">
                                   {selectedResult.target_entity.name}
                                 </p>
                               </div>
@@ -776,7 +776,7 @@ export default function SearchView() {
                     {/* Properties */}
                     {selectedResult.properties && Object.keys(selectedResult.properties).length > 0 && (
                       <div style={{ marginTop: '24px' }}>
-                        <h3 className="text-sm font-medium text-[#f0f4f8] flex items-center gap-2" style={{ marginBottom: '12px' }}>
+                        <h3 className="text-sm font-medium text-neo-text flex items-center gap-2" style={{ marginBottom: '12px' }}>
                           <Info className="w-4 h-4 text-[#00b4d8]" />
                           属性信息
                         </h3>
@@ -786,8 +786,8 @@ export default function SearchView() {
                             .slice(0, 10)
                             .map(([key, value]) => (
                             <div key={key} className="flex justify-between text-sm">
-                              <span className="text-[#64748b]">{key}:</span>
-                              <span className="text-[#94a3b8] text-right max-w-[180px] truncate">
+                              <span className="text-neo-text-muted">{key}:</span>
+                              <span className="text-neo-text-secondary text-right max-w-[180px] truncate">
                                 {String(value)}
                               </span>
                             </div>
@@ -803,7 +803,7 @@ export default function SearchView() {
                           {selectedResult.labels.map((label) => (
                             <span
                               key={label}
-                              className="px-2 py-1 rounded-md text-xs bg-[#1a2332] text-[#94a3b8] border border-[#2a3548]"
+                              className="px-2 py-1 rounded-md text-xs bg-neo-surface-light text-neo-text-secondary border border-neo-border"
                             >
                               {label}
                             </span>
@@ -835,11 +835,11 @@ export default function SearchView() {
           className="text-center"
           style={{ padding: '64px 0' }}
         >
-          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mx-auto border border-[#2a3548]" style={{ padding: '12px', marginBottom: '16px' }}>
-            <Search className="w-8 h-8 text-[#64748b]" />
+          <div className="w-16 h-16 rounded-xl bg-neo-surface-light flex items-center justify-center mx-auto border border-neo-border" style={{ padding: '12px', marginBottom: '16px' }}>
+            <Search className="w-8 h-8 text-neo-text-muted" />
           </div>
-          <p className="text-[#94a3b8]">未找到与 "{query}" 相关的结果</p>
-          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>尝试使用其他关键词搜索</p>
+          <p className="text-neo-text-secondary">未找到与 "{query}" 相关的结果</p>
+          <p className="text-sm text-neo-text-muted" style={{ marginTop: '4px' }}>尝试使用其他关键词搜索</p>
         </motion.div>
       )}
 
@@ -851,11 +851,11 @@ export default function SearchView() {
           className="text-center flex-1 flex items-center justify-center"
           style={{ padding: '64px 0' }}
         >
-          <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mx-auto border border-[#2a3548]" style={{ padding: '12px', marginBottom: '16px' }}>
-            <Network className="w-8 h-8 text-[#64748b]" />
+          <div className="w-16 h-16 rounded-xl bg-neo-surface-light flex items-center justify-center mx-auto border border-neo-border" style={{ padding: '12px', marginBottom: '16px' }}>
+            <Network className="w-8 h-8 text-neo-text-muted" />
           </div>
-          <p className="text-[#94a3b8]">请先选择一个知识图谱</p>
-          <p className="text-sm text-[#64748b]" style={{ marginTop: '4px' }}>从左上角下拉菜单中选择要搜索的知识图谱</p>
+          <p className="text-neo-text-secondary">请先选择一个知识图谱</p>
+          <p className="text-sm text-neo-text-muted" style={{ marginTop: '4px' }}>从左上角下拉菜单中选择要搜索的知识图谱</p>
         </motion.div>
       )}
     </div>

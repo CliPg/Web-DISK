@@ -31,7 +31,7 @@ const statusConfig = {
   pending: {
     icon: Clock,
     label: '等待处理',
-    color: 'text-[#64748b]',
+    color: 'text-neo-text-muted',
     bg: 'bg-[#64748b]/10',
     dotColor: '#64748b',
     animate: false,
@@ -578,8 +578,8 @@ export default function DocumentsView() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#f0f4f8]">文档管理</h1>
-          <p className="text-[#64748b] text-sm mt-0.5">上传和管理您的知识文档</p>
+          <h1 className="text-xl font-semibold text-neo-text">文档管理</h1>
+          <p className="text-neo-text-muted text-sm mt-0.5">上传和管理您的知识文档</p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -593,7 +593,7 @@ export default function DocumentsView() {
           <button
             onClick={refreshAll}
             disabled={isLoading}
-            className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
+            className="text-sm text-neo-text-muted hover:text-neo-text hover:bg-neo-surface-light rounded-lg transition-colors flex items-center gap-1.5"
             style={{ padding: '6px 10px 6px 14px' }}
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -607,7 +607,7 @@ export default function DocumentsView() {
         className={`p-6 border-2 border-dashed transition-all duration-300 ${
           isDragging
             ? 'border-[#00b4d8] bg-[#00b4d8]/5'
-            : 'border-[#2a3548] hover:border-[#3b4a61]'
+            : 'border-neo-border hover:border-neo-border-light'
         } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -616,7 +616,7 @@ export default function DocumentsView() {
         {/* Graph Selector */}
         {graphs.length > 0 && (
           <div className="mb-5 flex items-center gap-3 graph-dropdown" style={{ paddingTop: '8px', paddingLeft: '8px' }}>
-            <span className="text-sm text-[#94a3b8] whitespace-nowrap">上传到:</span>
+            <span className="text-sm text-neo-text-secondary whitespace-nowrap">上传到:</span>
             <div className="relative">
               <motion.button
                 className="flex items-center gap-2 neo-card rounded-lg text-sm min-w-[180px] justify-between hover:border-[#00b4d8]/50 transition-colors"
@@ -628,11 +628,11 @@ export default function DocumentsView() {
                   <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center">
                     <Network className="w-3 h-3 text-[#00b4d8]" />
                   </div>
-                  <span className="text-[#f0f4f8]">
+                  <span className="text-neo-text">
                     {graphs.find((g) => g.id === selectedGraphId)?.name || '选择知识图谱'}
                   </span>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-neo-text-muted transition-transform ${graphDropdownOpen ? 'rotate-180' : ''}`} />
               </motion.button>
 
               <AnimatePresence>
@@ -657,7 +657,7 @@ export default function DocumentsView() {
                         <div className="w-5 h-5 rounded bg-[#00b4d8]/20 flex items-center justify-center shrink-0">
                           <Network className="w-3 h-3 text-[#00b4d8]" />
                         </div>
-                        <span className="text-[#f0f4f8] truncate">{graph.name}</span>
+                        <span className="text-neo-text truncate">{graph.name}</span>
                         {selectedGraphId === graph.id && (
                           <CheckCircle2 className="w-4 h-4 text-[#00c853] ml-auto shrink-0" />
                         )}
@@ -673,14 +673,14 @@ export default function DocumentsView() {
         <div className="flex flex-col items-center justify-center py-4">
           <motion.div
             className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
-              isDragging ? 'bg-[#00b4d8]/10' : 'bg-[#1a2332]'
-            } border border-[#2a3548]`}
+              isDragging ? 'bg-[#00b4d8]/10' : 'bg-neo-surface-light'
+            } border border-neo-border`}
             animate={{ scale: isDragging ? 1.1 : 1 }}
           >
-            <Upload className={`w-6 h-6 ${isDragging ? 'text-[#00b4d8]' : 'text-[#64748b]'}`} />
+            <Upload className={`w-6 h-6 ${isDragging ? 'text-[#00b4d8]' : 'text-neo-text-muted'}`} />
           </motion.div>
-          <p className="text-[#f0f4f8] font-medium mb-1">拖拽文件到此处上传</p>
-          <p className="text-sm text-[#64748b] mb-3">支持 PDF、DOCX、TXT、Markdown 格式</p>
+          <p className="text-neo-text font-medium mb-1">拖拽文件到此处上传</p>
+          <p className="text-sm text-neo-text-muted mb-3">支持 PDF、DOCX、TXT、Markdown 格式</p>
           <motion.button
             className="px-4 py-2 text-sm text-[#00b4d8] font-medium rounded-lg hover:bg-[#00b4d8]/10 transition-colors"
             whileHover={{ scale: 1.02 }}
@@ -702,17 +702,17 @@ export default function DocumentsView() {
             style={{ minWidth: '100px', minHeight: '36px', padding: '12px 30px' }}
             className={`rounded-lg flex items-center justify-center gap-2 ${
               activeFilter === stat.key
-                ? 'bg-[#1a2332] border border-[#2a3548]'
-                : 'hover:bg-[#1a2332]/50'
+                ? 'bg-neo-surface-light border border-neo-border'
+                : 'hover:bg-neo-surface-light/50'
             }`}
             onClick={() => setActiveFilter(stat.key)}
           >
-            <span className={`text-sm ${activeFilter === stat.key ? 'text-[#f0f4f8] font-medium' : 'text-[#94a3b8]'}`}>
+            <span className={`text-sm ${activeFilter === stat.key ? 'text-neo-text font-medium' : 'text-neo-text-secondary'}`}>
               {stat.label}
             </span>
             <span
               className={`text-sm font-semibold px-2 py-0.5 rounded-md ${
-                activeFilter === stat.key ? 'bg-[#0a0e17]' : 'bg-transparent'
+                activeFilter === stat.key ? 'bg-neo-bg' : 'bg-transparent'
               }`}
               style={{ color: stat.color }}
             >
@@ -742,7 +742,7 @@ export default function DocumentsView() {
       <NeoCard className="flex-1 overflow-hidden" variant="elevated">
         {isLoading ? (
           <div className="h-full flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-[#64748b] animate-spin" />
+            <Loader2 className="w-8 h-8 text-neo-text-muted animate-spin" />
           </div>
         ) : filteredDocuments.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
@@ -754,7 +754,7 @@ export default function DocumentsView() {
               return (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 group"
+                  className="flex items-center gap-4 p-4 hover:bg-neo-surface-light/50 group"
                   style={{ marginBottom: index < filteredDocuments.length - 1 ? '8px' : '0', minHeight: '60px', paddingLeft: '8px' }}
                 >
                     {/* File Icon */}
@@ -765,9 +765,9 @@ export default function DocumentsView() {
                     {/* File Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
+                        <h3 className="font-medium text-neo-text truncate">{doc.name}</h3>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-[#64748b]">
+                      <div className="flex items-center gap-2 text-xs text-neo-text-muted">
                         <span>{doc.size}</span>
                         {doc.pages > 0 && (
                           <>
@@ -839,11 +839,11 @@ export default function DocumentsView() {
                         <div className="flex items-center gap-3 text-xs">
                           <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-[#3b82f6]" />
-                            <span className="text-[#94a3b8]">{doc.entities} 实体</span>
+                            <span className="text-neo-text-secondary">{doc.entities} 实体</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 rounded-full bg-[#00c853]" />
-                            <span className="text-[#94a3b8]">{doc.relations} 关系</span>
+                            <span className="text-neo-text-secondary">{doc.relations} 关系</span>
                           </div>
                         </div>
                       )}
@@ -851,7 +851,7 @@ export default function DocumentsView() {
                       {/* Actions */}
                       <div className="relative">
                         <motion.button
-                          className="w-8 h-8 rounded-lg hover:bg-[#2a3548] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8] opacity-0 group-hover:opacity-100 transition-all"
+                          className="w-8 h-8 rounded-lg hover:bg-[#2a3548] flex items-center justify-center text-neo-text-muted hover:text-neo-text opacity-0 group-hover:opacity-100 transition-all"
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation()
@@ -871,7 +871,7 @@ export default function DocumentsView() {
                               className="absolute right-0 top-10 w-36 neo-card-elevated py-1.5 z-20"
                             >
                               <button
-                                className="w-full px-3 py-2 text-left text-sm text-[#94a3b8] hover:bg-[#1a2332] hover:text-[#f0f4f8] flex items-center gap-2"
+                                className="w-full px-3 py-2 text-left text-sm text-neo-text-secondary hover:bg-neo-surface-light hover:text-neo-text flex items-center gap-2"
                                 onClick={() => {
                                   setSelectedDoc(doc)
                                   setMenuOpen(null)
@@ -899,11 +899,11 @@ export default function DocumentsView() {
         ) : (
           /* Empty State */
           <div className="h-full flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
-              <FolderOpen className="w-8 h-8 text-[#64748b]" />
+            <div className="w-16 h-16 rounded-xl bg-neo-surface-light flex items-center justify-center mb-4 border border-neo-border">
+              <FolderOpen className="w-8 h-8 text-neo-text-muted" />
             </div>
-            <p className="text-[#94a3b8] mb-1">暂无文档</p>
-            <p className="text-sm text-[#64748b]">上传您的第一个文档开始构建知识图谱</p>
+            <p className="text-neo-text-secondary mb-1">暂无文档</p>
+            <p className="text-sm text-neo-text-muted">上传您的第一个文档开始构建知识图谱</p>
           </div>
         )}
       </NeoCard>
@@ -929,11 +929,11 @@ export default function DocumentsView() {
               {/* Header */}
               <div className="flex items-center justify-between mb-6" style={{ paddingLeft: '4px', paddingRight: '4px' }}>
                 <div>
-                  <h2 className="text-lg font-semibold text-[#f0f4f8]">批量构建文档</h2>
-                  <p className="text-sm text-[#64748b] mt-1">选择要构建的文档</p>
+                  <h2 className="text-lg font-semibold text-neo-text">批量构建文档</h2>
+                  <p className="text-sm text-neo-text-muted mt-1">选择要构建的文档</p>
                 </div>
                 <motion.button
-                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                  className="w-8 h-8 rounded-lg hover:bg-neo-surface-light flex items-center justify-center text-neo-text-muted hover:text-neo-text"
                   style={{ padding: '4px' }}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -944,7 +944,7 @@ export default function DocumentsView() {
               </div>
 
               {/* Selection Actions */}
-              <div className="flex items-center justify-between rounded-lg bg-[#0a0e17] border border-[#2a3548]" style={{ padding: '10px 14px', marginBottom: '16px' }}>
+              <div className="flex items-center justify-between rounded-lg bg-neo-bg border border-neo-border" style={{ padding: '10px 14px', marginBottom: '16px' }}>
                 <div className="flex items-center gap-3">
                   <motion.button
                     onClick={handleToggleSelectAll}
@@ -965,7 +965,7 @@ export default function DocumentsView() {
                       </>
                     )}
                   </motion.button>
-                  <span className="text-sm text-[#64748b]">
+                  <span className="text-sm text-neo-text-muted">
                     已选择 <span className="text-[#00b4d8] font-medium">{selectedDocIds.size}</span> 个文档
                   </span>
                 </div>
@@ -983,7 +983,7 @@ export default function DocumentsView() {
                       className={`w-full flex items-center gap-4 rounded-lg border transition-all text-left ${
                         isSelected
                           ? 'bg-[#00b4d8]/10 border-[#00b4d8]/30'
-                          : 'bg-[#0a0e17] border-[#2a3548] hover:border-[#3b4a61]'
+                          : 'bg-neo-bg border-neo-border hover:border-neo-border-light'
                       }`}
                       style={{ padding: '12px 16px', marginBottom: index < documents.filter((d) => d.status === 'pending' || d.status === 'error').length - 1 ? '8px' : '0' }}
                       whileHover={{ scale: 1.01 }}
@@ -993,8 +993,8 @@ export default function DocumentsView() {
                         {fileConfig.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
-                        <p className="text-xs text-[#64748b]">{doc.size}</p>
+                        <h3 className="font-medium text-neo-text truncate">{doc.name}</h3>
+                        <p className="text-xs text-neo-text-muted">{doc.size}</p>
                       </div>
                       {isSelected && (
                         <CheckCircle2 className="w-5 h-5 text-[#00b4d8] shrink-0" style={{ marginRight: '2px' }} />
@@ -1008,7 +1008,7 @@ export default function DocumentsView() {
               <div className="flex items-center justify-end gap-3" style={{ paddingLeft: '4px', paddingRight: '4px' }}>
                 <motion.button
                   onClick={handleCloseBatchSelect}
-                  className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors"
+                  className="text-sm text-neo-text-muted hover:text-neo-text hover:bg-neo-surface-light rounded-lg transition-colors"
                   style={{ padding: '10px 18px' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -1050,11 +1050,11 @@ export default function DocumentsView() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-start justify-between mb-5">
-                <div className={`w-14 h-14 rounded-xl ${fileTypeConfig[selectedDoc.fileType]?.bg || 'bg-[#1a2332]'} flex items-center justify-center text-3xl`}>
+                <div className={`w-14 h-14 rounded-xl ${fileTypeConfig[selectedDoc.fileType]?.bg || 'bg-neo-surface-light'} flex items-center justify-center text-3xl`}>
                   {fileTypeConfig[selectedDoc.fileType]?.icon || '📄'}
                 </div>
                 <motion.button
-                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8]"
+                  className="w-8 h-8 rounded-lg hover:bg-neo-surface-light flex items-center justify-center text-neo-text-muted hover:text-neo-text"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSelectedDoc(null)}
@@ -1063,17 +1063,17 @@ export default function DocumentsView() {
                 </motion.button>
               </div>
 
-              <h2 className="text-lg font-semibold text-[#f0f4f8] mb-1">{selectedDoc.name}</h2>
-              <p className="text-sm text-[#64748b] mb-6">上传于 {selectedDoc.uploadedAt}</p>
+              <h2 className="text-lg font-semibold text-neo-text mb-1">{selectedDoc.name}</h2>
+              <p className="text-sm text-neo-text-muted mb-6">上传于 {selectedDoc.uploadedAt}</p>
 
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
-                  <p className="text-xs text-[#64748b] mb-0.5">文件大小</p>
-                  <p className="font-medium text-[#f0f4f8]">{selectedDoc.size}</p>
+                <div className="p-3 rounded-lg bg-neo-bg border border-neo-border">
+                  <p className="text-xs text-neo-text-muted mb-0.5">文件大小</p>
+                  <p className="font-medium text-neo-text">{selectedDoc.size}</p>
                 </div>
-                <div className="p-3 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
-                  <p className="text-xs text-[#64748b] mb-0.5">状态</p>
-                  <p className="font-medium text-[#f0f4f8]">{statusConfig[selectedDoc.status].label}</p>
+                <div className="p-3 rounded-lg bg-neo-bg border border-neo-border">
+                  <p className="text-xs text-neo-text-muted mb-0.5">状态</p>
+                  <p className="font-medium text-neo-text">{statusConfig[selectedDoc.status].label}</p>
                 </div>
                 {selectedDoc.entities && (
                   <>

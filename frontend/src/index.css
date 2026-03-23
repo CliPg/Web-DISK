@@ -1,23 +1,54 @@
 @import "tailwindcss";
 
+:root {
+  --neo-bg: #0a0e17;
+  --neo-surface: #111827;
+  --neo-surface-light: #1a2332;
+  --neo-surface-hover: #232d3f;
+  --neo-border: #2a3548;
+  --neo-border-light: #3b4a61;
+  --neo-accent: #00b4d8;
+  --neo-accent-light: #48cae4;
+  --neo-accent-dark: #0096c7;
+  --neo-green: #00c853;
+  --neo-orange: #ff9800;
+  --neo-red: #f44336;
+  --neo-purple: #9c27b0;
+  --neo-text: #f0f4f8;
+  --neo-text-secondary: #94a3b8;
+  --neo-text-muted: #64748b;
+}
+
+.light {
+  --neo-bg: #f8fafc;
+  --neo-surface: #ffffff;
+  --neo-surface-light: #f1f5f9;
+  --neo-surface-hover: #e2e8f0;
+  --neo-border: #e2e8f0;
+  --neo-border-light: #cbd5e1;
+  --neo-text: #0f172a;
+  --neo-text-secondary: #475569;
+  --neo-text-muted: #64748b;
+}
+
 @theme {
-  /* Neo4j 风格的深色主题色板 */
-  --color-neo-bg: #0a0e17;
-  --color-neo-surface: #111827;
-  --color-neo-surface-light: #1a2332;
-  --color-neo-surface-hover: #232d3f;
-  --color-neo-border: #2a3548;
-  --color-neo-border-light: #3b4a61;
-  --color-neo-accent: #00b4d8;
-  --color-neo-accent-light: #48cae4;
-  --color-neo-accent-dark: #0096c7;
-  --color-neo-green: #00c853;
-  --color-neo-orange: #ff9800;
-  --color-neo-red: #f44336;
-  --color-neo-purple: #9c27b0;
-  --color-neo-text: #f0f4f8;
-  --color-neo-text-secondary: #94a3b8;
-  --color-neo-text-muted: #64748b;
+  /* Neo4j 风格的色板 */
+  --color-neo-bg: var(--neo-bg);
+  --color-neo-surface: var(--neo-surface);
+  --color-neo-surface-light: var(--neo-surface-light);
+  --color-neo-surface-hover: var(--neo-surface-hover);
+  --color-neo-border: var(--neo-border);
+  --color-neo-border-light: var(--neo-border-light);
+  --color-neo-accent: var(--neo-accent);
+  --color-neo-accent-light: var(--neo-accent-light);
+  --color-neo-accent-dark: var(--neo-accent-dark);
+  --color-neo-green: var(--neo-green);
+  --color-neo-orange: var(--neo-orange);
+  --color-neo-red: var(--neo-red);
+  --color-neo-purple: var(--neo-purple);
+  --color-neo-text: var(--neo-text);
+  --color-neo-text-secondary: var(--neo-text-secondary);
+  --color-neo-text-muted: var(--neo-text-muted);
 }
 
 * {
@@ -34,6 +65,7 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
 #root {

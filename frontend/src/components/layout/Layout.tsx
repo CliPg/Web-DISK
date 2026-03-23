@@ -3,7 +3,7 @@ import Sidebar from './Sidebar'
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex bg-[#0a0e17]">
+    <div className="min-h-screen flex bg-neo-bg">
       {/* Neo4j 风格侧边栏 */}
       <Sidebar />
       {/* 主内容区域 */}

@@ -23,7 +23,7 @@ const statusConfig = {
   pending: {
     icon: Clock,
     label: '等待处理',
-    color: 'text-[#64748b]',
+    color: 'text-neo-text-muted',
     bg: 'bg-[#64748b]/10',
     dotColor: '#64748b',
   },
@@ -217,13 +217,13 @@ export default function HistoryView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#f0f4f8]">构建历史</h1>
-          <p className="text-[#64748b] text-sm mt-0.5">文档构建记录与统计信息</p>
+          <h1 className="text-xl font-semibold text-neo-text">构建历史</h1>
+          <p className="text-neo-text-muted text-sm mt-0.5">文档构建记录与统计信息</p>
         </div>
         <button
           onClick={refreshAll}
           disabled={isLoading}
-          className="text-sm text-[#64748b] hover:text-[#f0f4f8] hover:bg-[#1a2332] rounded-lg transition-colors flex items-center gap-1.5"
+          className="text-sm text-neo-text-muted hover:text-neo-text hover:bg-neo-surface-light rounded-lg transition-colors flex items-center gap-1.5"
           style={{ padding: '6px 12px 6px 16px' }}
         >
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -240,8 +240,8 @@ export default function HistoryView() {
                 <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
               </div>
               <div>
-                <p className="text-2xl font-semibold text-[#f0f4f8]">{stat.value}</p>
-                <p className="text-xs text-[#64748b]">{stat.label}</p>
+                <p className="text-2xl font-semibold text-neo-text">{stat.value}</p>
+                <p className="text-xs text-neo-text-muted">{stat.label}</p>
               </div>
             </div>
           </NeoCard>
@@ -252,8 +252,8 @@ export default function HistoryView() {
               <Coins className="w-5 h-5 text-[#f59e0b]" />
             </div>
             <div>
-              <p className="text-2xl font-semibold text-[#f0f4f8]">{formatNumber(totalTokens)}</p>
-              <p className="text-xs text-[#64748b]">总 Token</p>
+              <p className="text-2xl font-semibold text-neo-text">{formatNumber(totalTokens)}</p>
+              <p className="text-xs text-neo-text-muted">总 Token</p>
             </div>
           </div>
         </NeoCard>
@@ -268,8 +268,8 @@ export default function HistoryView() {
                 <TrendingUp className="w-4 h-4 text-[#3b82f6]" />
               </div>
               <div>
-                <p className="text-lg font-semibold text-[#f0f4f8]">{formatNumber(totalInputTokens)}</p>
-                <p className="text-xs text-[#64748b]">输入 Tokens</p>
+                <p className="text-lg font-semibold text-neo-text">{formatNumber(totalInputTokens)}</p>
+                <p className="text-xs text-neo-text-muted">输入 Tokens</p>
               </div>
             </div>
           </NeoCard>
@@ -279,8 +279,8 @@ export default function HistoryView() {
                 <TrendingUp className="w-4 h-4 text-[#00c853]" />
               </div>
               <div>
-                <p className="text-lg font-semibold text-[#f0f4f8]">{formatNumber(totalOutputTokens)}</p>
-                <p className="text-xs text-[#64748b]">输出 Tokens</p>
+                <p className="text-lg font-semibold text-neo-text">{formatNumber(totalOutputTokens)}</p>
+                <p className="text-xs text-neo-text-muted">输出 Tokens</p>
               </div>
             </div>
           </NeoCard>
@@ -291,7 +291,7 @@ export default function HistoryView() {
       <NeoCard className="flex-1 overflow-hidden" variant="elevated">
         {isLoading ? (
           <div className="h-full flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-[#64748b] animate-spin" />
+            <Loader2 className="w-8 h-8 text-neo-text-muted animate-spin" />
           </div>
         ) : documents.length > 0 ? (
           <div className="divide-y divide-[#2a3548]">
@@ -302,7 +302,7 @@ export default function HistoryView() {
               return (
                 <div
                   key={doc.id}
-                  className="flex items-center gap-4 p-4 hover:bg-[#1a2332]/50 group transition-colors"
+                  className="flex items-center gap-4 p-4 hover:bg-neo-surface-light/50 group transition-colors"
                   style={{ marginBottom: index < documents.length - 1 ? '8px' : '0', minHeight: '60px', paddingLeft: '8px', paddingRight: '8px' }}
                 >
                   {/* File Icon */}
@@ -313,11 +313,11 @@ export default function HistoryView() {
                   {/* File Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-[#f0f4f8] truncate">{doc.name}</h3>
+                      <h3 className="font-medium text-neo-text truncate">{doc.name}</h3>
                     </div>
 
                     {/* Meta Info */}
-                    <div className="flex items-center gap-3 text-xs text-[#64748b]">
+                    <div className="flex items-center gap-3 text-xs text-neo-text-muted">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {doc.uploadedAt}
@@ -331,18 +331,18 @@ export default function HistoryView() {
 
                   {/* Stats */}
                   <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#0a0e17] border border-[#2a3548]">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-neo-bg border border-neo-border">
                       <Network className="w-3 h-3 text-[#3b82f6]" />
-                      <span className="text-[#94a3b8]">{doc.entities || 0} 实体</span>
+                      <span className="text-neo-text-secondary">{doc.entities || 0} 实体</span>
                     </div>
-                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#0a0e17] border border-[#2a3548]">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-neo-bg border border-neo-border">
                       <GitBranch className="w-3 h-3 text-[#a855f7]" />
-                      <span className="text-[#94a3b8]">{doc.relations || 0} 关系</span>
+                      <span className="text-neo-text-secondary">{doc.relations || 0} 关系</span>
                     </div>
                     {doc.totalTokens > 0 && (
-                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#0a0e17] border border-[#2a3548]">
+                      <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-neo-bg border border-neo-border">
                         <Coins className="w-3 h-3 text-[#f59e0b]" />
-                        <span className="text-[#94a3b8]">{formatNumber(doc.totalTokens)} T</span>
+                        <span className="text-neo-text-secondary">{formatNumber(doc.totalTokens)} T</span>
                       </div>
                     )}
                   </div>
@@ -361,11 +361,11 @@ export default function HistoryView() {
         ) : (
           /* Empty State */
           <div className="h-full flex flex-col items-center justify-center py-16">
-            <div className="w-16 h-16 rounded-xl bg-[#1a2332] flex items-center justify-center mb-4 border border-[#2a3548]">
-              <Clock className="w-8 h-8 text-[#64748b]" />
+            <div className="w-16 h-16 rounded-xl bg-neo-surface-light flex items-center justify-center mb-4 border border-neo-border">
+              <Clock className="w-8 h-8 text-neo-text-muted" />
             </div>
-            <p className="text-[#94a3b8] mb-1">暂无构建历史</p>
-            <p className="text-sm text-[#64748b]">上传并处理文档后，这里将显示构建记录</p>
+            <p className="text-neo-text-secondary mb-1">暂无构建历史</p>
+            <p className="text-sm text-neo-text-muted">上传并处理文档后，这里将显示构建记录</p>
           </div>
         )}
       </NeoCard>
@@ -390,16 +390,16 @@ export default function HistoryView() {
             >
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-xl ${fileTypeConfig[selectedDoc.fileType]?.bg || 'bg-[#1a2332]'} flex items-center justify-center text-3xl`}>
+                  <div className={`w-14 h-14 rounded-xl ${fileTypeConfig[selectedDoc.fileType]?.bg || 'bg-neo-surface-light'} flex items-center justify-center text-3xl`}>
                     {fileTypeConfig[selectedDoc.fileType]?.icon || '📄'}
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-[#f0f4f8]">{selectedDoc.name}</h2>
-                    <p className="text-sm text-[#64748b]">{selectedDoc.uploadedAt}</p>
+                    <h2 className="text-lg font-semibold text-neo-text">{selectedDoc.name}</h2>
+                    <p className="text-sm text-neo-text-muted">{selectedDoc.uploadedAt}</p>
                   </div>
                 </div>
                 <motion.button
-                  className="w-8 h-8 rounded-lg hover:bg-[#1a2332] flex items-center justify-center text-[#64748b] hover:text-[#f0f4f8] shrink-0"
+                  className="w-8 h-8 rounded-lg hover:bg-neo-surface-light flex items-center justify-center text-neo-text-muted hover:text-neo-text shrink-0"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setSelectedDoc(null)}
@@ -410,13 +410,13 @@ export default function HistoryView() {
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="p-4 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
-                  <p className="text-xs text-[#64748b] mb-2">文件大小</p>
-                  <p className="font-medium text-[#f0f4f8]">{selectedDoc.size}</p>
+                <div className="p-4 rounded-lg bg-neo-bg border border-neo-border">
+                  <p className="text-xs text-neo-text-muted mb-2">文件大小</p>
+                  <p className="font-medium text-neo-text">{selectedDoc.size}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-[#0a0e17] border border-[#2a3548]">
-                  <p className="text-xs text-[#64748b] mb-2">构建耗时</p>
-                  <p className="font-medium text-[#f0f4f8]">{calculateBuildTime(selectedDoc.taskStartedAt, selectedDoc.taskCompletedAt)}</p>
+                <div className="p-4 rounded-lg bg-neo-bg border border-neo-border">
+                  <p className="text-xs text-neo-text-muted mb-2">构建耗时</p>
+                  <p className="font-medium text-neo-text">{calculateBuildTime(selectedDoc.taskStartedAt, selectedDoc.taskCompletedAt)}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-[#3b82f6]/10 border border-[#3b82f6]/30">
                   <p className="text-xs text-[#3b82f6] mb-2">提取实体</p>
@@ -434,15 +434,15 @@ export default function HistoryView() {
                   <p className="text-xs text-[#f59e0b] mb-3">Token 消耗</p>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs text-[#64748b]">输入</p>
-                      <p className="font-medium text-[#f0f4f8]">{formatNumber(selectedDoc.inputTokens || 0)}</p>
+                      <p className="text-xs text-neo-text-muted">输入</p>
+                      <p className="font-medium text-neo-text">{formatNumber(selectedDoc.inputTokens || 0)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-[#64748b]">输出</p>
-                      <p className="font-medium text-[#f0f4f8]">{formatNumber(selectedDoc.outputTokens || 0)}</p>
+                      <p className="text-xs text-neo-text-muted">输出</p>
+                      <p className="font-medium text-neo-text">{formatNumber(selectedDoc.outputTokens || 0)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-[#64748b]">总计</p>
+                      <p className="text-xs text-neo-text-muted">总计</p>
                       <p className="font-medium text-[#f59e0b]">{formatNumber(selectedDoc.totalTokens || 0)}</p>
                     </div>
                   </div>
@@ -455,7 +455,7 @@ export default function HistoryView() {
                   <p className="text-xs text-[#00b4d8] mb-2">所属图谱</p>
                   <div className="flex items-center gap-2">
                     <Network className="w-4 h-4 text-[#00b4d8]" />
-                    <p className="font-medium text-[#f0f4f8]">{selectedDoc.graphName}</p>
+                    <p className="font-medium text-neo-text">{selectedDoc.graphName}</p>
                   </div>
                 </div>
               )}
